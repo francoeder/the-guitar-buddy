@@ -36,15 +36,15 @@ import { Training } from '../../models/training.model';
               </div>
             </div>
 
-            <mat-card-actions class="px-4 py-3 mt-1 flex items-center justify-between">
-              <div class="flex items-center gap-3">
+            <mat-card-actions class="px-4 py-3 mt-1 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div class="flex items-center gap-3 flex-wrap">
                 <button mat-raised-button color="primary" (click)="play(t)">
                   <mat-icon>play_arrow</mat-icon>
                   Play
                 </button>
                 <mat-slide-toggle [checked]="autoplay(t._id)" (change)="setAutoplay(t._id, $event.checked)">Autoplay</mat-slide-toggle>
               </div>
-              <div class="space-x-2">
+              <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
                 <button mat-stroked-button (click)="edit(t)">
                   <mat-icon>edit</mat-icon>
                   Edit
@@ -65,11 +65,15 @@ import { Training } from '../../models/training.model';
         </div>
       </ng-template>
 
-      <button mat-fab color="primary" class="fixed bottom-6 right-6" (click)="create()">
+      <button mat-fab color="primary" class="fab-create" (click)="create()">
         <mat-icon>add</mat-icon>
       </button>
     </div>
   `
+  ,
+  styles: [
+    `.fab-create{position:fixed;right:1.5rem;bottom:1.5rem;z-index:1000;}`
+  ]
 })
 export class HomeComponent {
   private svc = inject(TrainingService);
