@@ -8,6 +8,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { TrainingDialogComponent } from '../dialog/training-dialog.component';
 import { Router } from '@angular/router';
 import { TrainingService } from '../../services/training.service';
+import { AuthService } from '../../core/services/auth.service';
 import { Training } from '../../models/training.model';
 
 @Component({
@@ -79,6 +80,7 @@ export class HomeComponent {
   private svc = inject(TrainingService);
   private router = inject(Router);
   private dialog = inject(MatDialog);
+  private auth = inject(AuthService);
 
   trainings = computed(() => this.svc.getAll()());
 
@@ -104,7 +106,8 @@ export class HomeComponent {
   }
 
   create() {
-    const t: Training = { _id: crypto.randomUUID(), title: 'New Training', owner: '', active: true, cover: '', exercises: [] };
+    const email = this.auth.user()?.email ?? '';
+    const t: Training = { _id: crypto.randomUUID(), title: 'New Training', owner: email, active: true, cover: '', exercises: [] };
     this.openDialog(t);
   }
 
