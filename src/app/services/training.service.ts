@@ -1,11 +1,34 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal, effect } from '@angular/core';
 import { Training } from '../models/training.model';
-
-const STORAGE_KEY = 'guitar-buddy/trainings';
+import { FIREBASE_DB } from '../app.config';
+import { AuthService } from '../core/services/auth.service';
+import { type Firestore, collection, doc, onSnapshot, setDoc, deleteDoc } from 'firebase/firestore';
 
 @Injectable({ providedIn: 'root' })
 export class TrainingService {
-  private trainingsSignal = signal<Training[]>(this.readAll());
+  private db: Firestore = inject(FIREBASE_DB);
+  private auth = inject(AuthService);
+  private trainingsSignal = signal<Training[]>([]);
+  private unsubscribe: (() => void) | null = null;
+
+  constructor() {
+    effect(() => {
+      const user = this.auth.user();
+      if (this.unsubscribe) {
+        this.unsubscribe();
+        this.unsubscribe = null;
+      }
+      if (!user) {
+        this.trainingsSignal.set([]);
+        return;
+      }
+      const colRef = collection(this.db, 'users', user.uid, 'trainings');
+      this.unsubscribe = onSnapshot(colRef, (snap) => {
+        const items: Training[] = snap.docs.map(d => ({ _id: d.id, ...(d.data() as Omit<Training, '_id'>) }));
+        this.trainingsSignal.set(items);
+      });
+    });
+  }
 
   getAll() {
     return this.trainingsSignal.asReadonly();
@@ -15,30 +38,23 @@ export class TrainingService {
     return this.trainingsSignal().find(t => t._id === id);
   }
 
-  save(training: Training) {
-    const items = this.trainingsSignal().slice();
-    const idx = items.findIndex(t => t._id === training._id);
-    if (idx >= 0) items[idx] = training; else items.push(training);
-    this.trainingsSignal.set(items);
-    this.writeAll(items);
+  async save(training: Training) {
+    const user = this.auth.user();
+    if (!user) return;
+    const ref = doc(this.db, 'users', user.uid, 'trainings', training._id);
+    await setDoc(ref, {
+      title: training.title,
+      owner: training.owner,
+      active: training.active,
+      cover: training.cover ?? '',
+      exercises: training.exercises
+    }, { merge: true });
   }
 
-  delete(id: string) {
-    const items = this.trainingsSignal().filter(t => t._id !== id);
-    this.trainingsSignal.set(items);
-    this.writeAll(items);
-  }
-
-  private readAll(): Training[] {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  }
-
-  private writeAll(items: Training[]) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  async delete(id: string) {
+    const user = this.auth.user();
+    if (!user) return;
+    const ref = doc(this.db, 'users', user.uid, 'trainings', id);
+    await deleteDoc(ref);
   }
 }
