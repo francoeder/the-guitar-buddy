@@ -68,7 +68,7 @@ import { Training, Exercise } from '../../models/training.model';
 
                   <mat-form-field appearance="fill" class="w-full col-span-6 md:col-span-2">
                     <mat-label>Break Seconds</mat-label>
-                    <input matInput type="number" formControlName="breakSeconds" />
+                    <input matInput type="number" min="5" formControlName="breakSeconds" />
                   </mat-form-field>
 
                   <mat-form-field appearance="fill" class="w-full col-span-12">
@@ -180,7 +180,7 @@ export class TrainingDialogComponent {
       bpm: [e.bpm, [Validators.min(0)]],
       durationMinutes: [e.durationMinutes, [Validators.min(0)]],
       durationSeconds: [e.durationSeconds, [Validators.min(0)]],
-      breakSeconds: [e.breakSeconds, [Validators.min(0)]]
+      breakSeconds: [e.breakSeconds, [Validators.min(5)]]
     });
   }
 }

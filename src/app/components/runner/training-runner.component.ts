@@ -17,7 +17,7 @@ type MediaType = 'image' | 'iframe' | 'none';
   imports: [CommonModule, SafeResourcePipe, MatButtonModule, MatIconModule, PrepOverlayComponent],
   template: `
     <div class="h-[100svh] overflow-hidden flex flex-col">
-      <app-prep-overlay *ngIf="isPrep()" [seconds]="prepRemaining()" [nextTitle]="current()?.title"></app-prep-overlay>
+      <app-prep-overlay *ngIf="isPrep()" [seconds]="prepRemaining()" [nextTitle]="prepNextTitle()" [bpm]="prepBpm()" [message]="prepMessage()"></app-prep-overlay>
       <div class="h-14 pr-3 pl-0 border-b bg-white shrink-0 relative flex items-center justify-center">
         <div class="absolute left-3">
           <button mat-raised-button color="primary" (click)="back()">
@@ -27,14 +27,16 @@ type MediaType = 'image' | 'iframe' | 'none';
         </div>
         <div class="text-center">
           <span class="font-semibold">{{ training?.title }}</span>
-          <span class="ml-2 text-gray-600" *ngIf="current() as ex">— {{ ex.title }}</span>
+          <span class="ml-2 text-gray-600" *ngIf="current() as ex">— {{ ex.title }}<ng-container *ngIf="ex.bpm > 0"> - {{ ex.bpm }} BPM</ng-container></span>
         </div>
         <div class="absolute right-3 text-sm" *ngIf="training">{{ index()+1 }} / {{ training.exercises.length }}</div>
       </div>
 
       <div class="flex-1 min-h-0 flex items-center justify-center bg-gray-50 overflow-hidden">
         <ng-container [ngSwitch]="mediaType(current()?.resourceLink)">
-          <img *ngSwitchCase="'image'" [src]="current()?.resourceLink" class="max-h-full max-w-full object-contain" />
+          <div *ngSwitchCase="'image'" class="flex-1 min-h-0 w-full h-full p-[25px] flex items-center justify-center overflow-hidden">
+            <img [src]="current()?.resourceLink" [alt]="current()?.title || 'Exercise image'" class="block max-w-full max-h-full object-contain m-auto" />
+          </div>
           <iframe *ngSwitchCase="'iframe'" [src]="current()?.resourceLink | safeResource" class="w-full h-full"></iframe>
           <div *ngSwitchDefault class="text-gray-400">No media</div>
         </ng-container>
@@ -84,6 +86,8 @@ export class TrainingRunnerComponent implements OnInit {
   nextHint = signal(false);
   private timerId?: any;
   private prepTimerId?: any;
+  prepPhase = signal<'rest' | 'prep'>('prep');
+  prepTargetIndex = signal<number | null>(null);
 
   ngOnInit() {
     this.route.paramMap.subscribe(params => {
@@ -104,6 +108,12 @@ export class TrainingRunnerComponent implements OnInit {
     return this.training.exercises[this.index()] ?? undefined;
   }
 
+  nextExercise(): Exercise | undefined {
+    if (!this.training) return undefined;
+    const i = this.index() + 1;
+    return this.training.exercises[i] ?? undefined;
+  }
+
   mediaType(link?: string): MediaType {
     if (!link) return 'none';
     if (link.startsWith('data:image') || /\.(jpeg|jpg|png|webp)$/i.test(link)) return 'image';
@@ -119,7 +129,7 @@ export class TrainingRunnerComponent implements OnInit {
     if (!this.training) return;
     this.index.set(Math.max(0, this.index() - 1));
     this.isPrep.set(false);
-    this.startPrep(3);
+    this.startPrep(5);
     this.lockLandscape();
     this.nextHint.set(false);
   }
@@ -128,7 +138,7 @@ export class TrainingRunnerComponent implements OnInit {
     if (!this.training) return;
     this.index.set(Math.min(this.training.exercises.length - 1, this.index() + 1));
     this.isPrep.set(false);
-    this.startPrep(3);
+    this.startPrep(5);
     this.lockLandscape();
     this.nextHint.set(false);
   }
@@ -168,8 +178,44 @@ export class TrainingRunnerComponent implements OnInit {
         clearInterval(this.timerId);
         this.metro.stop();
         if (this.autoplay() && this.training && this.index() + 1 < this.training.exercises.length) {
-          this.index.set(this.index() + 1);
-          this.startPrep(3);
+          const breakSecRaw = ex.breakSeconds ?? 0;
+          const breakSec = breakSecRaw > 0 ? Math.max(breakSecRaw, 5) : 5;
+          this.isPrep.set(true);
+          this.prepPhase.set(breakSecRaw > 0 ? 'rest' : 'prep');
+          this.prepTargetIndex.set(this.index() + 1);
+          this.prepRemaining.set(breakSec);
+          if (this.prepTimerId) clearInterval(this.prepTimerId);
+          this.metro.stop();
+          let metroStartedForPrep = false;
+          this.prepTimerId = setInterval(() => {
+            const r2 = this.prepRemaining();
+            if (!metroStartedForPrep && r2 === 5) {
+              const nextEx = this.nextExercise();
+              const nbpm = nextEx?.bpm ?? 0;
+              if (nbpm > 0) {
+                if (this.metro.isPlaying()) {
+                  if (this.metro.currentBpm() !== nbpm) {
+                    this.metro.stop();
+                    this.metro.start(nbpm);
+                  }
+                } else {
+                  this.metro.start(nbpm);
+                }
+              } else {
+                this.metro.stop();
+              }
+              this.prepPhase.set('prep');
+              metroStartedForPrep = true;
+            }
+            if (r2 > 0) {
+              this.prepRemaining.set(r2 - 1);
+            } else {
+              clearInterval(this.prepTimerId);
+              this.isPrep.set(false);
+              this.index.set(this.index() + 1);
+              this.resetTimer();
+            }
+          }, 1000);
           this.nextHint.set(false);
         } else {
           this.nextHint.set(true);
@@ -195,13 +241,32 @@ export class TrainingRunnerComponent implements OnInit {
   private startPrep(seconds = 5) {
     if (!this.training || !this.current()) return this.resetTimer();
     this.isPrep.set(true);
+    this.prepPhase.set('prep');
+    this.prepTargetIndex.set(this.index());
     this.prepRemaining.set(seconds);
     this.nextHint.set(false);
-    this.metro.stop();
     if (this.timerId) clearInterval(this.timerId);
     if (this.prepTimerId) clearInterval(this.prepTimerId);
+    const ex = this.current();
+    const bpm = ex?.bpm ?? 0;
+    this.metro.stop();
     this.prepTimerId = setInterval(() => {
       const r = this.prepRemaining();
+      if (r === 5) {
+        this.prepPhase.set('prep');
+        if (bpm > 0) {
+          if (this.metro.isPlaying()) {
+            if (this.metro.currentBpm() !== bpm) {
+              this.metro.stop();
+              this.metro.start(bpm);
+            }
+          } else {
+            this.metro.start(bpm);
+          }
+        } else {
+          this.metro.stop();
+        }
+      }
       if (r > 0) this.prepRemaining.set(r - 1);
       else {
         clearInterval(this.prepTimerId);
@@ -209,6 +274,24 @@ export class TrainingRunnerComponent implements OnInit {
         this.resetTimer();
       }
     }, 1000);
+  }
+
+  prepNextTitle() {
+    if (!this.training) return undefined;
+    const idx = this.prepTargetIndex();
+    if (idx === null) return this.current()?.title;
+    return this.training.exercises[idx]?.title ?? this.current()?.title;
+  }
+
+  prepBpm() {
+    if (!this.training) return 0;
+    const idx = this.prepTargetIndex();
+    if (idx === null) return this.current()?.bpm ?? 0;
+    return this.training.exercises[idx]?.bpm ?? 0;
+  }
+
+  prepMessage() {
+    return this.prepPhase() === 'rest' ? 'Rest Time' : 'Get Ready';
   }
 
   remainingMinutes() {

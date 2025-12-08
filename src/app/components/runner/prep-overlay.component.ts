@@ -12,8 +12,9 @@ import { CommonModule } from '@angular/common';
           <ng-container *ngIf="seconds > 0; else goText">{{ seconds }}</ng-container>
           <ng-template #goText>Go!</ng-template>
         </div>
-        <div class="mt-4 text-gray-600 text-2xl tracking-wide">Get Ready</div>
+        <div class="mt-4 text-gray-600 text-2xl tracking-wide">{{ message }}</div>
         <div class="mt-2 text-gray-700 text-lg" *ngIf="nextTitle">Next exercise: <span class="font-medium">{{ nextTitle }}</span></div>
+        <div class="mt-1 text-gray-700 text-lg" *ngIf="bpm > 0">BPM: <span class="font-medium">{{ bpm }}</span></div>
       </div>
     </div>
   `,
@@ -25,4 +26,6 @@ import { CommonModule } from '@angular/common';
 export class PrepOverlayComponent {
   @Input() seconds = 5;
   @Input() nextTitle?: string;
+  @Input() bpm = 0;
+  @Input() message = 'Get Ready';
 }
