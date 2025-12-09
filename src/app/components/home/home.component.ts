@@ -3,9 +3,8 @@ import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatDialogModule } from '@angular/material/dialog';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { TrainingDialogComponent } from '../dialog/training-dialog.component';
 import { Router } from '@angular/router';
 import { TrainingService } from '../../services/training.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -79,7 +78,6 @@ import { Training } from '../../models/training.model';
 export class HomeComponent {
   private svc = inject(TrainingService);
   private router = inject(Router);
-  private dialog = inject(MatDialog);
   private auth = inject(AuthService);
 
   trainings = computed(() => this.svc.getAll()());
@@ -102,21 +100,16 @@ export class HomeComponent {
   }
 
   edit(t: Training) {
-    this.openDialog({ ...t });
+    this.router.navigate(['/training', t._id]);
   }
 
   create() {
-    const email = this.auth.user()?.email ?? '';
-    const t: Training = { _id: crypto.randomUUID(), title: 'New Training', owner: email, active: true, cover: '', exercises: [] };
-    this.openDialog(t);
+    const id = crypto.randomUUID();
+    this.router.navigate(['/training', id]);
   }
 
   remove(t: Training) {
     this.svc.delete(t._id);
   }
 
-  private openDialog(training: Training) {
-    const ref = this.dialog.open(TrainingDialogComponent, { data: training, width: '900px' });
-    ref.afterClosed().subscribe(result => { if (result) this.svc.save(result as Training); });
-  }
 }
