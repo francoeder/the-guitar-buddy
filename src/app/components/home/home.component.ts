@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatDialogModule } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { Router } from '@angular/router';
 import { TrainingService } from '../../services/training.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Training } from '../../models/training.model';
+import { ConfirmDialogComponent } from '../dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-home',
@@ -79,6 +80,7 @@ export class HomeComponent {
   private svc = inject(TrainingService);
   private router = inject(Router);
   private auth = inject(AuthService);
+  private dialog = inject(MatDialog);
 
   trainings = computed(() => this.svc.getAll()());
 
@@ -109,7 +111,18 @@ export class HomeComponent {
   }
 
   remove(t: Training) {
-    this.svc.delete(t._id);
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Delete Training',
+        message: `Are you sure you want to delete "${t.title}"?`,
+        confirmText: 'Delete',
+        cancelText: 'Cancel'
+      },
+      width: '360px'
+    });
+    ref.afterClosed().subscribe(result => {
+      if (result === true) this.svc.delete(t._id);
+    });
   }
 
 }
