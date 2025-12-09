@@ -1,6 +1,6 @@
-import { Component, inject, ViewChild, ElementRef } from '@angular/core';
+import { Component, inject, ViewChild, ViewChildren, ElementRef, QueryList } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormArray, FormBuilder, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormArray, FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,11 +8,13 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { DragDropModule, CdkDragDrop, CdkDragMove } from '@angular/cdk/drag-drop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TrainingService } from '../../services/training.service';
 import { Training, Exercise } from '../../models/training.model';
 import { AuthService } from '../../core/services/auth.service';
 import { ExerciseDialogComponent } from '../../components/dialog/exercise-dialog.component';
+import { SafeResourcePipe } from '../../pipes/safe-resource.pipe';
 
 @Component({
   selector: 'app-training-editor',
@@ -26,7 +28,9 @@ import { ExerciseDialogComponent } from '../../components/dialog/exercise-dialog
     MatCheckboxModule,
     MatIconModule,
     MatCardModule,
-    MatDialogModule
+    MatDialogModule,
+    DragDropModule,
+    SafeResourcePipe
   ],
   template: `
     <div class="p-6 max-w-5xl mx-auto">
@@ -83,37 +87,56 @@ import { ExerciseDialogComponent } from '../../components/dialog/exercise-dialog
           </button>
         </div>
 
-        <div class="grid gap-4 mt-3 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3" formArrayName="exercises">
-          <mat-card class="shadow" *ngFor="let ex of exercises.controls; let i = index" [formGroupName]="i">
-            <ng-container *ngIf="isImage(ex.get('resourceLink')?.value || ''); else noImg">
-              <img mat-card-image [src]="ex.get('resourceLink')?.value" alt="Exercício" class="h-40 object-cover" />
-            </ng-container>
-            <ng-template #noImg>
-              <div class="h-40 bg-gradient-to-br from-gray-200 to-gray-400 flex items-center justify-center text-gray-700">{{ ex.get('title')?.value }}</div>
-            </ng-template>
+        <div class="flex flex-col gap-4 mt-3" formArrayName="exercises" cdkDropList (cdkDropListDropped)="drop($event)">
+          <ng-container *ngFor="let ex of exercises.controls; let i = index">
+            <mat-card class="shadow" [formGroupName]="i" cdkDrag #cardEl>
+              <ng-template cdkDragPlaceholder>
+                <div class="slot-placeholder"></div>
+              </ng-template>
 
-            <div class="px-4 pt-3">
-              <div class="text-base font-semibold leading-tight truncate">{{ ex.get('title')?.value }}</div>
-              <div class="text-sm text-gray-600">BPM: {{ ex.get('bpm')?.value || 0 }}</div>
-              <div class="text-sm text-gray-600">Duration: {{ ex.get('durationMinutes')?.value || 0 }}m {{ ex.get('durationSeconds')?.value || 0 }}s</div>
-              <div class="text-sm text-gray-600" *ngIf="(ex.get('breakSeconds')?.value || 0) > 0">Break: {{ ex.get('breakSeconds')?.value }}s</div>
-            </div>
+              <div class="p-3 grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+                <div class="w-full h-24 md:h-32 overflow-hidden rounded">
+                  <ng-container *ngIf="isImage(ex.get('resourceLink')?.value || ''); else mediaIframe">
+                    <img [src]="ex.get('resourceLink')?.value" alt="Exercício" class="w-full h-full object-cover" />
+                  </ng-container>
+                  <ng-template #mediaIframe>
+                    <ng-container *ngIf="ex.get('resourceLink')?.value; else mediaPlaceholder">
+                      <iframe class="w-full h-full" [src]="resolveMediaSrc(ex.get('resourceLink')?.value) | safeResource" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </ng-container>
+                    <ng-template #mediaPlaceholder>
+                      <div class="w-full h-full bg-gradient-to-br from-gray-200 to-gray-400 flex items-center justify-center text-gray-700">{{ ex.get('title')?.value }}</div>
+                    </ng-template>
+                  </ng-template>
+                </div>
 
-            <mat-card-actions class="px-4 py-3 mt-1 flex items-center justify-between">
-              <button mat-stroked-button (click)="editExercise(i)">
-                <mat-icon>edit</mat-icon>
-                Edit
-              </button>
-              <button mat-stroked-button color="warn" (click)="removeExercise(i)">
-                <mat-icon>delete</mat-icon>
-                Remove
-              </button>
-            </mat-card-actions>
-          </mat-card>
+                <div class="space-y-1">
+                  <div class="text-base font-semibold leading-tight truncate">{{ ex.get('title')?.value }}</div>
+                  <div class="text-sm text-gray-600">BPM: {{ ex.get('bpm')?.value || 0 }}</div>
+                  <div class="text-sm text-gray-600">Duração: {{ ex.get('durationMinutes')?.value || 0 }}m {{ ex.get('durationSeconds')?.value || 0 }}s</div>
+                  <div class="text-sm text-gray-600" *ngIf="(ex.get('breakSeconds')?.value || 0) > 0">Pausa: {{ ex.get('breakSeconds')?.value }}s</div>
+                </div>
+
+                <div class="flex flex-col gap-2 items-end">
+                  <button mat-stroked-button (click)="editExercise(i)">
+                    <mat-icon>edit</mat-icon>
+                    Editar
+                  </button>
+                  <button mat-stroked-button color="warn" (click)="removeExercise(i)">
+                    <mat-icon>delete</mat-icon>
+                    Remover
+                  </button>
+                </div>
+              </div>
+            </mat-card>
+          </ng-container>
         </div>
       </form>
     </div>
-  `
+  `,
+  styles: [
+    `.slot-placeholder{min-height:120px;border:2px dashed #60a5fa;background:#eff6ff;border-radius:8px}`,
+    `.origin-placeholder{min-height:0 !important;height:0 !important;padding:0 !important;margin:0 !important;border:none !important}`
+  ]
 })
 export class TrainingEditorComponent {
   private fb = inject(FormBuilder);
@@ -150,6 +173,7 @@ export class TrainingEditorComponent {
       }, { emitEvent: false });
       const arr = this.fb.array(training.exercises.map(e => this.exerciseGroup(e)));
       this.form.setControl('exercises', arr);
+      arr.controls.forEach(g => this.tryAutoFillDuration(g as FormGroup));
       this.form.get('owner')?.disable({ emitEvent: false });
     });
   }
@@ -178,15 +202,19 @@ export class TrainingEditorComponent {
 
   addExercise() {
     const id = (this.exercises.length > 0 ? Math.max(...this.exercises.controls.map(g => g.get('id')?.value as number)) + 1 : 1);
-    const ex: Exercise = { id, title: 'Exercise', bpm: 0, durationMinutes: 1, durationSeconds: 0, breakSeconds: 10 };
+    const ex: Exercise = { id, title: 'Exercise', bpm: 0, durationMinutes: 0, durationSeconds: 0, breakSeconds: 10 };
     const ref = this.dialog.open(ExerciseDialogComponent, { data: ex, width: '600px' });
     ref.afterClosed().subscribe(result => {
-      if (result) this.exercises.push(this.exerciseGroup(result as Exercise));
+      if (result) {
+        const g = this.exerciseGroup(result as Exercise);
+        this.exercises.push(g);
+        this.tryAutoFillDuration(g);
+      }
     });
   }
 
   editExercise(index: number) {
-    const group = this.exercises.at(index);
+    const group = this.exercises.at(index) as FormGroup;
     const current: Exercise = {
       id: group.get('id')?.value as number,
       title: group.get('title')?.value as string,
@@ -208,13 +236,60 @@ export class TrainingEditorComponent {
           durationSeconds: updated.durationSeconds,
           breakSeconds: updated.breakSeconds
         });
+        this.tryAutoFillDuration(group);
       }
     });
+  }
+
+  private async tryAutoFillDuration(group: FormGroup) {
+    const link = (group.get('resourceLink')?.value as string) || '';
+    const mins = (group.get('durationMinutes')?.value as number) || 0;
+    const secs = (group.get('durationSeconds')?.value as number) || 0;
+    if (!link || (mins > 0 || secs > 0)) return;
+    const duration = await this.fetchDurationFromProvider(link);
+    if (duration && duration > 0) {
+      const m = Math.floor(duration / 60);
+      const s = Math.round(duration % 60);
+      group.patchValue({ durationMinutes: m, durationSeconds: s });
+    }
+  }
+
+  private async fetchDurationFromProvider(link: string): Promise<number | null> {
+    try {
+      if (this.isVimeoLink(link)) {
+        const url = `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(link)}`;
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const data = await res.json() as { duration?: number };
+        return typeof data.duration === 'number' ? data.duration : null;
+      }
+      if (this.isDailymotionLink(link)) {
+        const url = `https://www.dailymotion.com/services/oembed?format=json&url=${encodeURIComponent(link)}`;
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const data = await res.json() as { duration?: number };
+        return typeof data.duration === 'number' ? data.duration : null;
+      }
+      return null;
+    } catch {
+      return null;
+    }
   }
 
   removeExercise(i: number) {
     this.exercises.removeAt(i);
   }
+
+  drop(event: CdkDragDrop<FormGroup[]>) {
+    const prev = event.previousIndex;
+    let curr = event.currentIndex;
+    if (prev === curr) return;
+    const ctrl = this.exercises.at(prev);
+    this.exercises.removeAt(prev);
+    if (prev < curr) curr--; // adjust target after removal
+    this.exercises.insert(curr, ctrl);
+  }
+
 
   onCoverSelected(ev: Event) {
     const input = ev.target as HTMLInputElement;
@@ -254,5 +329,168 @@ export class TrainingEditorComponent {
       breakSeconds: [e.breakSeconds, [Validators.min(5)]]
     });
   }
-}
 
+  resolveMediaSrc(link?: string): string {
+    if (!link) return '';
+    if (this.isYouTubeLink(link)) {
+      const embed = this.toYouTubeEmbed(link);
+      return embed || link;
+    }
+    if (this.isVimeoLink(link)) {
+      const embed = this.toVimeoEmbed(link);
+      return embed || link;
+    }
+    if (this.isDailymotionLink(link)) {
+      const embed = this.toDailymotionEmbed(link);
+      return embed || link;
+    }
+    if (this.isFacebookLink(link)) {
+      const embed = this.toFacebookEmbed(link);
+      return embed || link;
+    }
+    if (this.isGoogleDriveLink(link)) {
+      const embed = this.toGoogleDriveEmbed(link);
+      return embed || link;
+    }
+    return link;
+  }
+
+  private isYouTubeLink(link: string): boolean {
+    try {
+      const u = new URL(link);
+      return /(^|\.)youtube\.com$/i.test(u.hostname) || /(^|\.)youtu\.be$/i.test(u.hostname);
+    } catch {
+      return /youtube\.com|youtu\.be/i.test(link);
+    }
+  }
+
+  private toYouTubeEmbed(link: string): string | null {
+    try {
+      const u = new URL(link);
+      const host = u.hostname;
+      if (/(^|\.)youtube\.com$/i.test(host)) {
+        if (u.pathname.startsWith('/embed/')) return link;
+        const vid = u.searchParams.get('v');
+        if (vid) return `https://www.youtube.com/embed/${vid}`;
+        const m = u.pathname.match(/\/shorts\/([\w-]+)/i);
+        if (m) return `https://www.youtube.com/embed/${m[1]}`;
+      }
+      if (/(^|\.)youtu\.be$/i.test(host)) {
+        const id = u.pathname.replace(/^\//, '');
+        if (id) return `https://www.youtube.com/embed/${id}`;
+      }
+      return null;
+    } catch {
+      const be = link.match(/youtu\.be\/([\w-]+)/i);
+      if (be) return `https://www.youtube.com/embed/${be[1]}`;
+      const yt = link.match(/[?&]v=([\w-]+)/i);
+      if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+      return null;
+    }
+  }
+
+  private isVimeoLink(link: string): boolean {
+    try {
+      const u = new URL(link);
+      return /(^|\.)vimeo\.com$/i.test(u.hostname);
+    } catch {
+      return /vimeo\.com/i.test(link);
+    }
+  }
+
+  private toVimeoEmbed(link: string): string | null {
+    try {
+      const u = new URL(link);
+      const p = u.pathname;
+      const albumVideo = p.match(/\/album\/\d+\/video\/(\d+)/i);
+      if (albumVideo && albumVideo[1]) return `https://player.vimeo.com/video/${albumVideo[1]}`;
+      const channelsVideo = p.match(/\/channels\/[^/]+\/(\d+)/i);
+      if (channelsVideo && channelsVideo[1]) return `https://player.vimeo.com/video/${channelsVideo[1]}`;
+      const directId = p.match(/\/(\d+)/);
+      if (directId && directId[1]) return `https://player.vimeo.com/video/${directId[1]}`;
+      return null;
+    } catch {
+      const m = link.match(/vimeo\.com\/(\d+)/i);
+      if (m && m[1]) return `https://player.vimeo.com/video/${m[1]}`;
+      const av = link.match(/album\/\d+\/video\/(\d+)/i);
+      if (av && av[1]) return `https://player.vimeo.com/video/${av[1]}`;
+      return null;
+    }
+  }
+
+  private isDailymotionLink(link: string): boolean {
+    try {
+      const u = new URL(link);
+      return /(^|\.)dailymotion\.com$/i.test(u.hostname) || /(^|\.)dai\.ly$/i.test(u.hostname);
+    } catch {
+      return /dailymotion\.com|dai\.ly/i.test(link);
+    }
+  }
+
+  private toDailymotionEmbed(link: string): string | null {
+    try {
+      const u = new URL(link);
+      if (/(^|\.)dai\.ly$/i.test(u.hostname)) {
+        const id = u.pathname.replace(/^\//, '');
+        if (id) return `https://www.dailymotion.com/embed/video/${id}`;
+      }
+      const m = u.pathname.match(/\/video\/([\w-]+)/i);
+      if (m && m[1]) return `https://www.dailymotion.com/embed/video/${m[1]}`;
+      return null;
+    } catch {
+      const short = link.match(/dai\.ly\/([\w-]+)/i);
+      if (short && short[1]) return `https://www.dailymotion.com/embed/video/${short[1]}`;
+      const long = link.match(/dailymotion\.com\/video\/([\w-]+)/i);
+      if (long && long[1]) return `https://www.dailymotion.com/embed/video/${long[1]}`;
+      return null;
+    }
+  }
+
+  private isFacebookLink(link: string): boolean {
+    try {
+      const u = new URL(link);
+      return /(^|\.)facebook\.com$/i.test(u.hostname);
+    } catch {
+      return /facebook\.com/i.test(link);
+    }
+  }
+
+  private toFacebookEmbed(link: string): string | null {
+    try {
+      const u = new URL(link);
+      const href = encodeURIComponent(u.toString());
+      return `https://www.facebook.com/plugins/video.php?href=${href}&show_text=0`;
+    } catch {
+      const href = encodeURIComponent(link);
+      return `https://www.facebook.com/plugins/video.php?href=${href}&show_text=0`;
+    }
+  }
+
+  private isGoogleDriveLink(link: string): boolean {
+    try {
+      const u = new URL(link);
+      return /(^|\.)drive\.google\.com$/i.test(u.hostname) || /(^|\.)docs\.google\.com$/i.test(u.hostname);
+    } catch {
+      return /drive\.google\.com|docs\.google\.com/i.test(link);
+    }
+  }
+
+  private toGoogleDriveEmbed(link: string): string | null {
+    try {
+      const u = new URL(link);
+      if (/drive\.google\.com$/i.test(u.hostname) || /docs\.google\.com$/i.test(u.hostname)) {
+        const fileIdPath = u.pathname.match(/\/file\/d\/([^/]+)/i);
+        if (fileIdPath && fileIdPath[1]) return `https://drive.google.com/file/d/${fileIdPath[1]}/preview`;
+        const idParam = u.searchParams.get('id');
+        if (idParam) return `https://drive.google.com/file/d/${idParam}/preview`;
+      }
+      return null;
+    } catch {
+      const pathId = link.match(/\/file\/d\/([^/]+)/i);
+      if (pathId && pathId[1]) return `https://drive.google.com/file/d/${pathId[1]}/preview`;
+      const queryId = link.match(/[?&]id=([^&]+)/i);
+      if (queryId && queryId[1]) return `https://drive.google.com/file/d/${queryId[1]}/preview`;
+      return null;
+    }
+  }
+}

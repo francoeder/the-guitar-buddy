@@ -32,7 +32,7 @@ type MediaType = 'image' | 'iframe' | 'none';
         <div class="absolute right-3 text-sm" *ngIf="training">{{ index()+1 }} / {{ training.exercises.length }}</div>
       </div>
 
-      <div class="flex-1 min-h-0 flex items-center justify-center bg-gray-50 overflow-hidden">
+      <div class="flex-1 min-h-0 flex items-center justify-center bg-gray-50 overflow-hidden relative">
         <ng-container [ngSwitch]="mediaType(current()?.resourceLink)">
           <div *ngSwitchCase="'image'" class="flex-1 min-h-0 w-full h-full p-[25px] flex items-center justify-center overflow-hidden">
             <img [src]="current()?.resourceLink" [alt]="current()?.title || 'Exercise image'" class="block max-w-full max-h-full object-contain m-auto" />
@@ -40,6 +40,9 @@ type MediaType = 'image' | 'iframe' | 'none';
           <iframe *ngSwitchCase="'iframe'" [src]="resolveMediaSrc(current()?.resourceLink) | safeResource" class="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
           <div *ngSwitchDefault class="text-gray-400">No media</div>
         </ng-container>
+        <div *ngIf="isVideoCurrent() && replayOverlay()" class="absolute inset-0 bg-black/100 flex items-center justify-center z-10">
+          <button mat-raised-button color="primary" (click)="playAgain()">Play again</button>
+        </div>
       </div>
 
       <div class="p-3 bg-white border-t shrink-0">
@@ -48,7 +51,7 @@ type MediaType = 'image' | 'iframe' | 'none';
             <mat-icon>skip_previous</mat-icon>
             Previous
           </button>
-          <button mat-raised-button color="primary" (click)="toggle()">
+          <button mat-raised-button color="primary" (click)="toggle()" [disabled]="isVideoCurrent()" class="play-btn">
             <mat-icon>{{ metro.isPlaying() ? 'pause' : 'play_arrow' }}</mat-icon>
             {{ metro.isPlaying() ? 'Pause' : 'Play' }}
           </button>
@@ -59,7 +62,7 @@ type MediaType = 'image' | 'iframe' | 'none';
             <span *ngIf="nextHint() && (isLast() || !autoplay())" class="pointer-events-none absolute -inset-1 hint-ring ring-2 ring-sky-400"></span>
           </button>
         </div>
-        <div class="mt-4 text-center text-2xl">
+        <div class="mt-4 text-center text-2xl" [class.hidden]="isVideoCurrent()">
           {{ remainingMinutes() }}:{{ remainingSeconds() | number:'2.0-0' }}
         </div>
       </div>
@@ -68,7 +71,10 @@ type MediaType = 'image' | 'iframe' | 'none';
   styles: [
     `@keyframes hintBlink { 0% { box-shadow: 0 0 0 0 rgba(3,169,244,0); transform: scale(1); } 50% { box-shadow: 0 0 24px 8px rgba(3,169,244,0.7); transform: scale(1.06); } 100% { box-shadow: 0 0 0 0 rgba(3,169,244,0); transform: scale(1); } }`,
     `.hint-blink { animation: hintBlink 0.9s ease-in-out infinite; }`,
-    `.hint-ring { border-radius: 9999px; }`
+    `.hint-ring { border-radius: 9999px; }`,
+    `.play-btn { --mdc-filled-button-disabled-container-color: #b0bec5; --mdc-filled-button-disabled-label-text-color: #37474f; }`,
+    `.mat-mdc-raised-button.play-btn.mat-mdc-button-disabled { background-color: #b0bec5 !important; opacity: 1 !important; }`,
+    `.mat-mdc-raised-button.play-btn.mat-mdc-button-disabled .mdc-button__label { color: #37474f !important; }`
   ]
 })
 export class TrainingRunnerComponent implements OnInit {
@@ -84,6 +90,9 @@ export class TrainingRunnerComponent implements OnInit {
   prepRemaining = signal(0);
   autoplay = signal(false);
   nextHint = signal(false);
+  shouldAutoplay = signal(false);
+  replayOverlay = signal(false);
+  reloadToken = signal(0);
   private timerId?: any;
   private prepTimerId?: any;
   prepPhase = signal<'rest' | 'prep'>('prep');
@@ -124,9 +133,56 @@ export class TrainingRunnerComponent implements OnInit {
     if (!link) return '';
     if (this.isYouTubeLink(link)) {
       const embed = this.toYouTubeEmbed(link);
-      return embed || link;
+      const src = this.shouldAutoplay() ? this.withAutoplay(embed || link, 'youtube') : (embed || link);
+      return this.withReloadToken(src);
     }
-    return link;
+    if (this.isVimeoLink(link)) {
+      const embed = this.toVimeoEmbed(link);
+      const src = this.shouldAutoplay() ? this.withAutoplay(embed || link, 'vimeo') : (embed || link);
+      return this.withReloadToken(src);
+    }
+    if (this.isDailymotionLink(link)) {
+      const embed = this.toDailymotionEmbed(link);
+      const src = this.shouldAutoplay() ? this.withAutoplay(embed || link, 'dailymotion') : (embed || link);
+      return this.withReloadToken(src);
+    }
+    if (this.isFacebookLink(link)) {
+      const embed = this.toFacebookEmbed(link);
+      const src = this.shouldAutoplay() ? this.withAutoplay(embed || link, 'facebook') : (embed || link);
+      return this.withReloadToken(src);
+    }
+    if (this.isGoogleDriveLink(link)) {
+      const embed = this.toGoogleDriveEmbed(link);
+      return this.withReloadToken(embed || link);
+    }
+    return this.withReloadToken(link);
+  }
+
+  private withAutoplay(src: string, provider: 'youtube' | 'vimeo' | 'dailymotion' | 'facebook'): string {
+    try {
+      const u = new URL(src);
+      const addParam = (k: string, v: string) => u.searchParams.set(k, v);
+      if (provider === 'youtube') {
+        addParam('autoplay', '1');
+        addParam('playsinline', '1');
+        addParam('enablejsapi', '1');
+      } else if (provider === 'vimeo') {
+        addParam('autoplay', '1');
+        addParam('playsinline', '1');
+      } else if (provider === 'dailymotion') {
+        addParam('autoplay', '1');
+      } else if (provider === 'facebook') {
+        addParam('autoplay', '1');
+      }
+      return u.toString();
+    } catch {
+      const sep = src.includes('?') ? '&' : '?';
+      if (provider === 'youtube') return `${src}${sep}autoplay=1&playsinline=1&enablejsapi=1`;
+      if (provider === 'vimeo') return `${src}${sep}autoplay=1&playsinline=1`;
+      if (provider === 'dailymotion') return `${src}${sep}autoplay=1`;
+      if (provider === 'facebook') return `${src}${sep}autoplay=1`;
+      return src;
+    }
   }
 
   private isYouTubeLink(link: string): boolean {
@@ -163,6 +219,111 @@ export class TrainingRunnerComponent implements OnInit {
     }
   }
 
+  private isVimeoLink(link: string): boolean {
+    try {
+      const u = new URL(link);
+      return /(^|\.)vimeo\.com$/i.test(u.hostname);
+    } catch {
+      return /vimeo\.com/i.test(link);
+    }
+  }
+
+  private toVimeoEmbed(link: string): string | null {
+    try {
+      const u = new URL(link);
+      const p = u.pathname;
+      const albumVideo = p.match(/\/album\/\d+\/video\/(\d+)/i);
+      if (albumVideo && albumVideo[1]) return `https://player.vimeo.com/video/${albumVideo[1]}`;
+      const channelsVideo = p.match(/\/channels\/[^/]+\/(\d+)/i);
+      if (channelsVideo && channelsVideo[1]) return `https://player.vimeo.com/video/${channelsVideo[1]}`;
+      const directId = p.match(/\/(\d+)/);
+      if (directId && directId[1]) return `https://player.vimeo.com/video/${directId[1]}`;
+      return null;
+    } catch {
+      const m = link.match(/vimeo\.com\/(\d+)/i);
+      if (m && m[1]) return `https://player.vimeo.com/video/${m[1]}`;
+      const av = link.match(/album\/\d+\/video\/(\d+)/i);
+      if (av && av[1]) return `https://player.vimeo.com/video/${av[1]}`;
+      return null;
+    }
+  }
+
+  private isDailymotionLink(link: string): boolean {
+    try {
+      const u = new URL(link);
+      return /(^|\.)dailymotion\.com$/i.test(u.hostname) || /(^|\.)dai\.ly$/i.test(u.hostname);
+    } catch {
+      return /dailymotion\.com|dai\.ly/i.test(link);
+    }
+  }
+
+  private toDailymotionEmbed(link: string): string | null {
+    try {
+      const u = new URL(link);
+      if (/(^|\.)dai\.ly$/i.test(u.hostname)) {
+        const id = u.pathname.replace(/^\//, '');
+        if (id) return `https://www.dailymotion.com/embed/video/${id}`;
+      }
+      const m = u.pathname.match(/\/video\/([\w-]+)/i);
+      if (m && m[1]) return `https://www.dailymotion.com/embed/video/${m[1]}`;
+      return null;
+    } catch {
+      const short = link.match(/dai\.ly\/([\w-]+)/i);
+      if (short && short[1]) return `https://www.dailymotion.com/embed/video/${short[1]}`;
+      const long = link.match(/dailymotion\.com\/video\/([\w-]+)/i);
+      if (long && long[1]) return `https://www.dailymotion.com/embed/video/${long[1]}`;
+      return null;
+    }
+  }
+
+  private isFacebookLink(link: string): boolean {
+    try {
+      const u = new URL(link);
+      return /(^|\.)facebook\.com$/i.test(u.hostname);
+    } catch {
+      return /facebook\.com/i.test(link);
+    }
+  }
+
+  private toFacebookEmbed(link: string): string | null {
+    try {
+      const u = new URL(link);
+      const href = encodeURIComponent(u.toString());
+      return `https://www.facebook.com/plugins/video.php?href=${href}&show_text=0`;
+    } catch {
+      const href = encodeURIComponent(link);
+      return `https://www.facebook.com/plugins/video.php?href=${href}&show_text=0`;
+    }
+  }
+
+  private isGoogleDriveLink(link: string): boolean {
+    try {
+      const u = new URL(link);
+      return /(^|\.)drive\.google\.com$/i.test(u.hostname) || /(^|\.)docs\.google\.com$/i.test(u.hostname);
+    } catch {
+      return /drive\.google\.com|docs\.google\.com/i.test(link);
+    }
+  }
+
+  private toGoogleDriveEmbed(link: string): string | null {
+    try {
+      const u = new URL(link);
+      if (/drive\.google\.com$/i.test(u.hostname) || /docs\.google\.com$/i.test(u.hostname)) {
+        const fileIdPath = u.pathname.match(/\/file\/d\/([^/]+)/i);
+        if (fileIdPath && fileIdPath[1]) return `https://drive.google.com/file/d/${fileIdPath[1]}/preview`;
+        const idParam = u.searchParams.get('id');
+        if (idParam) return `https://drive.google.com/file/d/${idParam}/preview`;
+      }
+      return null;
+    } catch {
+      const pathId = link.match(/\/file\/d\/([^/]+)/i);
+      if (pathId && pathId[1]) return `https://drive.google.com/file/d/${pathId[1]}/preview`;
+      const queryId = link.match(/[?&]id=([^&]+)/i);
+      if (queryId && queryId[1]) return `https://drive.google.com/file/d/${queryId[1]}/preview`;
+      return null;
+    }
+  }
+
   back() {
     this.metro.stop();
     this.router.navigate(['/']);
@@ -172,6 +333,7 @@ export class TrainingRunnerComponent implements OnInit {
     if (!this.training) return;
     this.index.set(Math.max(0, this.index() - 1));
     this.isPrep.set(false);
+    this.replayOverlay.set(false);
     this.startPrep(5);
     this.lockLandscape();
     this.nextHint.set(false);
@@ -181,6 +343,7 @@ export class TrainingRunnerComponent implements OnInit {
     if (!this.training) return;
     this.index.set(Math.min(this.training.exercises.length - 1, this.index() + 1));
     this.isPrep.set(false);
+    this.replayOverlay.set(false);
     this.startPrep(5);
     this.lockLandscape();
     this.nextHint.set(false);
@@ -201,6 +364,7 @@ export class TrainingRunnerComponent implements OnInit {
   }
 
   toggle() {
+    if (this.isVideoCurrent()) return;
     const bpm = this.current()?.bpm ?? 0;
     this.metro.toggle(bpm);
     this.lockLandscape();
@@ -209,6 +373,7 @@ export class TrainingRunnerComponent implements OnInit {
   private resetTimer() {
     const ex = this.current();
     if (!ex) return;
+    this.replayOverlay.set(false);
     const total = ex.durationMinutes * 60 + ex.durationSeconds;
     this.remaining.set(total);
     this.nextHint.set(false);
@@ -220,7 +385,18 @@ export class TrainingRunnerComponent implements OnInit {
       } else {
         clearInterval(this.timerId);
         this.metro.stop();
+        if (this.isVideoCurrent()) {
+          this.replayOverlay.set(true);
+          this.nextHint.set(true);
+          return;
+        }
         if (this.autoplay() && this.training && this.index() + 1 < this.training.exercises.length) {
+          const nextEx = this.nextExercise();
+          const nextLink = nextEx?.resourceLink;
+          if (this.mediaType(nextLink) === 'iframe') {
+            this.nextHint.set(true);
+            return;
+          }
           const breakSecRaw = ex.breakSeconds ?? 0;
           const breakSec = breakSecRaw > 0 ? Math.max(breakSecRaw, 5) : 5;
           this.isPrep.set(true);
@@ -247,18 +423,19 @@ export class TrainingRunnerComponent implements OnInit {
               } else {
                 this.metro.stop();
               }
-              this.prepPhase.set('prep');
-              metroStartedForPrep = true;
-            }
-            if (r2 > 0) {
-              this.prepRemaining.set(r2 - 1);
-            } else {
-              clearInterval(this.prepTimerId);
-              this.isPrep.set(false);
-              this.index.set(this.index() + 1);
-              this.resetTimer();
-            }
-          }, 1000);
+          this.prepPhase.set('prep');
+          metroStartedForPrep = true;
+        }
+        if (r2 > 0) {
+          this.prepRemaining.set(r2 - 1);
+        } else {
+          clearInterval(this.prepTimerId);
+          this.isPrep.set(false);
+          this.shouldAutoplay.set(true);
+          this.index.set(this.index() + 1);
+          this.resetTimer();
+        }
+      }, 1000);
           this.nextHint.set(false);
         } else {
           this.nextHint.set(true);
@@ -267,7 +444,9 @@ export class TrainingRunnerComponent implements OnInit {
     }, 1000);
 
     const bpm = ex.bpm;
-    if (bpm > 0) {
+    if (this.isVideoCurrent()) {
+      this.metro.stop();
+    } else if (bpm > 0) {
       if (this.metro.isPlaying()) {
         if (this.metro.currentBpm() !== bpm) {
           this.metro.stop();
@@ -281,8 +460,37 @@ export class TrainingRunnerComponent implements OnInit {
     }
   }
 
+  isVideoCurrent() {
+    return this.mediaType(this.current()?.resourceLink) === 'iframe';
+  }
+
+  playAgain() {
+    this.replayOverlay.set(false);
+    this.shouldAutoplay.set(true);
+    this.reloadToken.set(this.reloadToken() + 1);
+    this.resetTimer();
+  }
+
+  private withReloadToken(src: string): string {
+    try {
+      const u = new URL(src);
+      u.searchParams.set('gbt', String(this.reloadToken()));
+      return u.toString();
+    } catch {
+      const sep = src.includes('?') ? '&' : '?';
+      return `${src}${sep}gbt=${this.reloadToken()}`;
+    }
+  }
+
   private startPrep(seconds = 5) {
     if (!this.training || !this.current()) return this.resetTimer();
+    const link = this.current()?.resourceLink;
+    if (this.mediaType(link) === 'iframe') {
+      this.isPrep.set(false);
+      this.shouldAutoplay.set(true);
+      this.replayOverlay.set(false);
+      return this.resetTimer();
+    }
     this.isPrep.set(true);
     this.prepPhase.set('prep');
     this.prepTargetIndex.set(this.index());
@@ -310,8 +518,9 @@ export class TrainingRunnerComponent implements OnInit {
           this.metro.stop();
         }
       }
-      if (r > 0) this.prepRemaining.set(r - 1);
-      else {
+      if (r > 0) {
+        this.prepRemaining.set(r - 1);
+      } else {
         clearInterval(this.prepTimerId);
         this.isPrep.set(false);
         this.resetTimer();
