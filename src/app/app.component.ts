@@ -17,9 +17,12 @@ import { Router } from '@angular/router';
     <div class="min-h-screen flex flex-col">
       <mat-toolbar *ngIf="!isRunnerRoute()" color="primary" class="sticky top-0 z-10">
         <img src="assets/images/music-buddy-avatar.png" alt="Guitar Buddy" class="w-8 h-8 mr-2 rounded" />
-        <span class="font-semibold">{{ 'app.title' | translate }}</span>
-        <button mat-button class="ml-3" routerLink="/home"><mat-icon>home</mat-icon> {{ 'nav.home' | translate }}</button>
-        <button mat-button class="ml-1" [matMenuTriggerFor]="trainingsMenu"><mat-icon>library_music</mat-icon> {{ 'nav.trainings' | translate }}</button>
+        <span class="font-semibold app-title">{{ 'app.title' | translate }}</span>
+        <button mat-icon-button class="ml-1 mobile-only" [matMenuTriggerFor]="mobileMenu" aria-label="Menu">
+          <mat-icon>menu</mat-icon>
+        </button>
+        <button mat-button class="ml-3 desktop-only" routerLink="/home"><mat-icon>home</mat-icon> {{ 'nav.home' | translate }}</button>
+        <button mat-button class="ml-1 desktop-only" [matMenuTriggerFor]="trainingsMenu"><mat-icon>library_music</mat-icon> {{ 'nav.trainings' | translate }}</button>
         <span class="flex-1"></span>
         <mat-menu #trainingsMenu="matMenu">
           <button mat-menu-item routerLink="/trainings">
@@ -31,9 +34,17 @@ import { Router } from '@angular/router';
             {{ 'nav.createTraining' | translate }}
           </button>
         </mat-menu>
+        <mat-menu #mobileMenu="matMenu">
+          <button mat-menu-item routerLink="/home"><mat-icon>home</mat-icon> {{ 'nav.home' | translate }}</button>
+          <button mat-menu-item routerLink="/trainings"><mat-icon>list</mat-icon> {{ 'nav.availableTrainings' | translate }}</button>
+          <button mat-menu-item (click)="createTraining()"><mat-icon>add</mat-icon> {{ 'nav.createTraining' | translate }}</button>
+        </mat-menu>
         <div class="flex items-center gap-2">
-          <button mat-button [matMenuTriggerFor]="languageMenu" aria-label="Language" class="p-0 h-auto min-w-0">
+          <button mat-button [matMenuTriggerFor]="languageMenu" aria-label="Language" class="p-0 h-auto min-w-0 desktop-only">
             <img [src]="flagIcon()" alt="lang" class="w-8 h-8 rounded-sm" />
+          </button>
+          <button mat-button [matMenuTriggerFor]="languageMenu" aria-label="Language" class="p-0 h-auto min-w-0 mobile-only">
+            <img [src]="flagIcon()" alt="lang" class="w-6 h-6 rounded-sm" />
           </button>
           <mat-menu #languageMenu="matMenu">
             <button mat-menu-item (click)="setLanguage('en-US')">
@@ -46,7 +57,7 @@ import { Router } from '@angular/router';
           <button mat-icon-button [matMenuTriggerFor]="notificationsMenu" aria-label="Notifications">
             <mat-icon>notifications</mat-icon>
           </button>
-          <button mat-button [matMenuTriggerFor]="userMenu" aria-label="User" class="p-0 h-auto min-w-0">
+          <button mat-button [matMenuTriggerFor]="userMenu" aria-label="User" class="p-0 h-auto min-w-0 desktop-only">
             <div class="relative inline-block">
               <img *ngIf="photoUrl(); else placeholderUser" [src]="photoUrl()" alt="avatar" class="w-10 h-10 rounded-full" />
               <div class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-white text-black shadow flex items-center justify-center border border-gray-300">
@@ -67,6 +78,16 @@ import { Router } from '@angular/router';
                 </div>
               </div>
             </ng-template>
+          </button>
+          <button mat-button [matMenuTriggerFor]="userMenu" aria-label="User" class="p-0 h-auto min-w-0 mobile-only">
+            <div class="relative inline-block">
+              <img *ngIf="photoUrl(); else placeholderUserMobile" [src]="photoUrl()" alt="avatar" class="w-8 h-8 rounded-full" />
+              <ng-template #placeholderUserMobile>
+                <div class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
+                  <mat-icon>person</mat-icon>
+                </div>
+              </ng-template>
+            </div>
           </button>
         </div>
         <mat-menu #userMenu="matMenu" [panelClass]="'user-menu-panel'">
@@ -99,7 +120,20 @@ import { Router } from '@angular/router';
         <router-outlet></router-outlet>
       </div>
     </div>
-  `
+  `,
+  styles: [
+    `
+    .desktop-only { display: none; }
+    .mobile-only { display: inline-flex; }
+    @media (min-width: 640px) {
+      .desktop-only { display: inline-flex !important; }
+      .mobile-only { display: none !important; }
+    }
+    @media (max-width: 639px) and (orientation: portrait) {
+      .app-title { display: none; }
+    }
+    `
+  ]
 })
 export class AppComponent {
   private router = inject(Router);
