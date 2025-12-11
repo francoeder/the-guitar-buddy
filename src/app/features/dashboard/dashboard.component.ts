@@ -18,7 +18,7 @@ import { AuthService } from '../../core/services/auth.service';
         <div>
           <button mat-stroked-button color="primary" class="mr-2" (click)="onLogout()">
             <mat-icon>logout</mat-icon>
-            Sair
+            Logout
           </button>
         </div>
       </mat-card>
@@ -35,4 +35,3 @@ export class DashboardComponent {
     await this.router.navigateByUrl('/login');
   }
 }
-

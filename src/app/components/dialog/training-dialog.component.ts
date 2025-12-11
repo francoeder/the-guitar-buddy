@@ -33,7 +33,7 @@ import { AuthService } from '../../core/services/auth.service';
                 <img [src]="form.get('cover')?.value" alt="Cover" class="h-24 w-auto object-cover rounded border" />
                 <button mat-stroked-button (click)="editCover()">
                   <mat-icon>edit</mat-icon>
-                  Editar
+                  Edit
                 </button>
               </div>
             </ng-container>

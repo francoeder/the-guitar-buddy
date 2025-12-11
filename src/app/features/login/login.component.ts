@@ -18,10 +18,10 @@ import { AuthService } from '../../core/services/auth.service';
         class="mx-auto mb-6 w-32 h-32 sm:w-48 sm:h-48 md:w-56 md:h-56 object-contain"
       />
       <mat-card class="w-full max-w-md p-6">
-        <h2 class="text-xl font-semibold mb-4">Entrar</h2>
+        <h2 class="text-xl font-semibold mb-4">Sign In</h2>
         <button mat-raised-button color="primary" class="w-full flex items-center gap-2" (click)="onLogin()">
           <mat-icon>login</mat-icon>
-          Entrar com Google
+          Sign in with Google
         </button>
       </mat-card>
     </div>

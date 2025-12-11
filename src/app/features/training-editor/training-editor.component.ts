@@ -97,7 +97,7 @@ import { SafeResourcePipe } from '../../pipes/safe-resource.pipe';
               <div class="p-3 grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
                 <div class="w-full h-24 md:h-32 overflow-hidden rounded">
                   <ng-container *ngIf="isImage(ex.get('resourceLink')?.value || ''); else mediaIframe">
-                    <img [src]="ex.get('resourceLink')?.value" alt="Exercício" class="w-full h-full object-cover" />
+                    <img [src]="ex.get('resourceLink')?.value" alt="Exercise" class="w-full h-full object-cover" />
                   </ng-container>
                   <ng-template #mediaIframe>
                     <ng-container *ngIf="ex.get('resourceLink')?.value; else mediaPlaceholder">
@@ -112,18 +112,18 @@ import { SafeResourcePipe } from '../../pipes/safe-resource.pipe';
                 <div class="space-y-1">
                   <div class="text-base font-semibold leading-tight truncate">{{ ex.get('title')?.value }}</div>
                   <div class="text-sm text-gray-600">BPM: {{ ex.get('bpm')?.value || 0 }}</div>
-                  <div class="text-sm text-gray-600">Duração: {{ ex.get('durationMinutes')?.value || 0 }}m {{ ex.get('durationSeconds')?.value || 0 }}s</div>
-                  <div class="text-sm text-gray-600" *ngIf="(ex.get('breakSeconds')?.value || 0) > 0">Pausa: {{ ex.get('breakSeconds')?.value }}s</div>
+                  <div class="text-sm text-gray-600">Duration: {{ ex.get('durationMinutes')?.value || 0 }}m {{ ex.get('durationSeconds')?.value || 0 }}s</div>
+                  <div class="text-sm text-gray-600" *ngIf="(ex.get('breakSeconds')?.value || 0) > 0">Break: {{ ex.get('breakSeconds')?.value }}s</div>
                 </div>
 
                 <div class="flex flex-col gap-2 items-end">
                   <button mat-stroked-button (click)="editExercise(i)">
                     <mat-icon>edit</mat-icon>
-                    Editar
+                    Edit
                   </button>
                   <button mat-stroked-button color="warn" (click)="removeExercise(i)">
                     <mat-icon>delete</mat-icon>
-                    Remover
+                    Remove
                   </button>
                 </div>
               </div>

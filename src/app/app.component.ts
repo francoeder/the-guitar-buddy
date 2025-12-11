@@ -18,7 +18,7 @@ import { Router } from '@angular/router';
         <span class="font-semibold">Guitar Buddy</span>
         <span class="flex-1"></span>
         <button mat-button routerLink="/home"><mat-icon>home</mat-icon> Home</button>
-        <button mat-icon-button [matMenuTriggerFor]="userMenu" aria-label="Usuário">
+        <button mat-icon-button [matMenuTriggerFor]="userMenu" aria-label="User">
           <mat-icon>account_circle</mat-icon>
         </button>
         <mat-menu #userMenu="matMenu" [panelClass]="'user-menu-panel'">
@@ -29,14 +29,14 @@ import { Router } from '@angular/router';
                 <mat-icon>person</mat-icon>
               </ng-template>
               <div class="flex flex-col">
-                <span class="font-medium">{{ displayName() || 'Usuário' }}</span>
+                <span class="font-medium">{{ displayName() || 'User' }}</span>
                 <span class="text-sm text-gray-600">{{ email() || '—' }}</span>
               </div>
             </div>
             <div class="mt-3 flex justify-end">
               <button mat-stroked-button color="primary" (click)="onLogout()">
                 <mat-icon>logout</mat-icon>
-                Sair
+                Logout
               </button>
             </div>
           </div>
