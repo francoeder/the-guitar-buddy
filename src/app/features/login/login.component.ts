@@ -16,9 +16,9 @@ import { TranslateModule } from '@ngx-translate/core';
       <mat-card class="p-0 overflow-hidden rounded-2xl shadow-md w-[95vw] h-[85vh] md:w-[70vw] md:h-[70vh]">
         <div class="grid md:grid-cols-2 h-full">
           <div class="relative flex items-center justify-center h-full px-8 py-10 md:py-16 text-white bg-gradient-to-br from-[#0E3A59] to-[#1A73A8]">
-            <div class="absolute top-6 left-6 flex items-center gap-2">
-              <img src="assets/images/music-buddy-avatar.png" alt="Music Buddy" class="w-8 h-8 rounded" />
-              <span class="font-medium">Music Buddy</span>
+            <div class="absolute top-6 left-6 flex items-center gap-3">
+              <img src="assets/images/music-buddy-avatar.png" alt="Music Buddy" class="w-16 h-16 md:w-24 md:h-24 rounded-full shadow-lg" />
+              <span class="font-medium text-base md:text-lg">Music Buddy</span>
             </div>
             <div class="max-w-md text-center">
               <div class="text-sm opacity-80">Nice to see you again</div>
