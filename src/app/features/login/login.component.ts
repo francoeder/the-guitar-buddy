@@ -12,20 +12,31 @@ import { TranslateModule } from '@ngx-translate/core';
   standalone: true,
   imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, TranslateModule],
   template: `
-    <div class="flex flex-col justify-center items-center min-h-screen p-4">
-      <img
-        src="assets/images/music-buddy-avatar.png"
-        alt="Music Buddy Avatar"
-        class="mx-auto mb-6 w-32 h-32 sm:w-48 sm:h-48 md:w-56 md:h-56 object-contain"
-      />
-      <mat-card class="w-full max-w-md p-6">
-        <h2 class="text-xl font-semibold mb-4">{{ 'login.title' | translate }}</h2>
-        <button mat-raised-button color="primary" class="w-full" (click)="onLogin()">
-          <span class="w-full flex items-center justify-center gap-2">
-            <img src="assets/icons/google.svg" alt="Google" class="w-5 h-5" />
-            <span>{{ 'login.google' | translate }}</span>
-          </span>
-        </button>
+    <div class="min-h-screen flex items-center justify-center p-4">
+      <mat-card class="p-0 overflow-hidden rounded-2xl shadow-md w-[95vw] h-[85vh] md:w-[70vw] md:h-[70vh]">
+        <div class="grid md:grid-cols-2 h-full">
+          <div class="relative flex items-center justify-center h-full px-8 py-10 md:py-16 text-white bg-gradient-to-br from-[#0E3A59] to-[#1A73A8]">
+            <div class="absolute top-6 left-6 flex items-center gap-2">
+              <img src="assets/images/music-buddy-avatar.png" alt="Guitar Buddy" class="w-8 h-8 rounded" />
+              <span class="font-medium">Guitar Buddy</span>
+            </div>
+            <div class="max-w-md text-center">
+              <div class="text-sm opacity-80">Nice to see you again</div>
+              <div class="mt-2 text-4xl md:text-5xl font-bold tracking-wide">WELCOME BACK</div>
+              <div class="mt-4 text-sm opacity-80">Practice smarter with your guitar training buddy.</div>
+            </div>
+          </div>
+          <div class="flex items-center justify-center h-full p-8 bg-white">
+            <div class="w-full max-w-sm md:max-w-md">
+              <button mat-raised-button color="primary" class="w-full" (click)="onLogin()">
+                <span class="w-full flex items-center justify-center gap-2">
+                  <img src="assets/icons/google.svg" alt="Google" class="w-5 h-5" />
+                  <span>{{ 'login.google' | translate }}</span>
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
       </mat-card>
     </div>
   `
