@@ -29,7 +29,8 @@
   },
   "login": {
     "title": "Sign In",
-    "google": "Sign in with Google"
+    "google": "Sign in with Google",
+    "subtitle": "Practice smarter with your music training buddy."
   },
   "dashboard": {
     "title": "Dashboard",

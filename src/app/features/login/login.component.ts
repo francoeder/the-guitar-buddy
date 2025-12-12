@@ -6,20 +6,24 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../core/services/auth.service';
 import { TranslateModule } from '@ngx-translate/core';
+import { LanguageSwitcherComponent } from '../../components/language-switcher.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, TranslateModule],
+  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, TranslateModule, LanguageSwitcherComponent],
   template: `
     <div class="min-h-screen flex items-center justify-center p-4">
-      <mat-card class="p-0 overflow-hidden rounded-2xl shadow-md w-[95vw] h-[85vh] md:w-[70vw] md:h-[70vh]">
+      <mat-card class="relative p-0 overflow-hidden rounded-2xl shadow-md w-[95vw] h-[85vh] md:w-[70vw] md:h-[70vh]">
+        <div class="absolute top-3 right-3 z-10">
+          <app-language-switcher></app-language-switcher>
+        </div>
         <div class="grid lg:grid-cols-2 h-full">
-          <div class="login-left relative flex items-center justify-center h-full px-6 sm:px-8 py-4 sm:py-8 md:py-16 text-white bg-gradient-to-br from-[#0E3A59] to-[#1A73A8]">
-            <div class="max-w-md w-full flex flex-col items-center text-center login-stack">
+          <div class="login-left relative flex items-center justify-center h-full px-4 sm:px-6 lg:px-6 py-2 sm:py-4 md:py-5 lg:py-4 xl:py-3 text-white bg-gradient-to-br from-[#0E3A59] to-[#1A73A8]">
+            <div class="max-w-md w-full flex flex-col items-center text-center login-stack gap-1">
               <img src="assets/images/music-buddy-avatar.png" alt="Music Buddy" class="login-avatar" />
               <div class="login-title font-bold tracking-wide">Music Buddy</div>
-              <div class="login-subtitle opacity-80">Practice smarter with your music training buddy.</div>
+              <div class="login-subtitle opacity-80">{{ 'login.subtitle' | translate }}</div>
             </div>
           </div>
           <div class="flex items-center justify-center h-full p-6 sm:p-8 bg-white">
@@ -39,7 +43,7 @@ import { TranslateModule } from '@ngx-translate/core';
   styles: [
     `
     .login-left { overflow: hidden; }
-    .login-stack { gap: clamp(0.5rem, 2.5vmin, 1rem); }
+    .login-stack { gap: 0.25rem; }
     .login-avatar { width: clamp(4rem, 22vmin, 10rem); height: clamp(4rem, 22vmin, 10rem); }
     .login-title { font-size: clamp(1.5rem, 8vmin, 3rem); }
     .login-subtitle { font-size: clamp(0.75rem, 3.2vmin, 1rem); }
@@ -48,13 +52,14 @@ import { TranslateModule } from '@ngx-translate/core';
     .login-button-label { font-size: clamp(0.95rem, 3.4vmin, 1.15rem); font-weight: 600; }
     @media (max-width: 639px) and (orientation: portrait) {
       .login-left { padding-top: 1rem; padding-bottom: 1rem; }
-      .login-stack { gap: clamp(1rem, 4.2vw, 1.5rem); }
+      .login-stack { gap: 0.25rem; }
       .login-avatar { width: clamp(7rem, 48vw, 13rem); height: clamp(7rem, 48vw, 13rem); }
       .login-title { font-size: clamp(2.4rem, 10vw, 3.2rem); }
       .login-subtitle { font-size: clamp(1.05rem, 4.8vw, 1.25rem); }
       .login-button-icon { width: clamp(1.4rem, 6vw, 2rem); height: clamp(1.4rem, 6vw, 2rem); }
       .login-button-label { font-size: clamp(1.05rem, 4.8vw, 1.25rem); }
     }
+    
     `
   ]
 })

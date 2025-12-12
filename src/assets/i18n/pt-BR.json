@@ -29,7 +29,8 @@
   },
   "login": {
     "title": "Entrar",
-    "google": "Entrar com Google"
+    "google": "Entrar com Google",
+    "subtitle": "Pratique de forma inteligente com seu parceiro de treino musical."
   },
   "dashboard": {
     "title": "Painel",

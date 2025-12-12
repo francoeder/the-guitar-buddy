@@ -6,13 +6,14 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { LanguageSwitcherComponent } from './components/language-switcher.component';
 import { AuthService } from './core/services/auth.service';
 import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, MatToolbarModule, MatButtonModule, MatIconModule, MatMenuModule, TranslateModule],
+  imports: [CommonModule, RouterOutlet, RouterLink, MatToolbarModule, MatButtonModule, MatIconModule, MatMenuModule, TranslateModule, LanguageSwitcherComponent],
   template: `
     <div class="min-h-screen flex flex-col">
       <mat-toolbar *ngIf="!isRunnerRoute()" color="primary" class="sticky top-0 z-10">
@@ -40,20 +41,7 @@ import { Router } from '@angular/router';
           <button mat-menu-item (click)="createTraining()"><mat-icon>add</mat-icon> {{ 'nav.createTraining' | translate }}</button>
         </mat-menu>
         <div class="flex items-center gap-2">
-          <button mat-button [matMenuTriggerFor]="languageMenu" aria-label="Language" class="p-0 h-auto min-w-0 desktop-only">
-            <img [src]="flagIcon()" alt="lang" class="w-8 h-8 rounded-sm" />
-          </button>
-          <button mat-button [matMenuTriggerFor]="languageMenu" aria-label="Language" class="p-0 h-auto min-w-0 mobile-only">
-            <img [src]="flagIcon()" alt="lang" class="w-6 h-6 rounded-sm" />
-          </button>
-          <mat-menu #languageMenu="matMenu">
-            <button mat-menu-item (click)="setLanguage('en-US')">
-              <img src="assets/flags/us.png" alt="English" class="w-6 h-6 mr-2 inline-block" /> English
-            </button>
-            <button mat-menu-item (click)="setLanguage('pt-BR')">
-              <img src="assets/flags/br.png" alt="Português" class="w-6 h-6 mr-2 inline-block" /> Português
-            </button>
-          </mat-menu>
+          <app-language-switcher></app-language-switcher>
           <button mat-icon-button [matMenuTriggerFor]="notificationsMenu" aria-label="Notifications">
             <mat-icon>notifications</mat-icon>
           </button>
@@ -154,16 +142,6 @@ export class AppComponent {
     this.translate.setDefaultLang('en-US');
     const saved = localStorage.getItem('lang') || 'en-US';
     this.translate.use(saved);
-  }
-  currentLang() {
-    return this.translate.currentLang || 'en-US';
-  }
-  flagIcon() {
-    return this.currentLang() === 'pt-BR' ? 'assets/flags/br.png' : 'assets/flags/us.png';
-  }
-  setLanguage(lang: string) {
-    this.translate.use(lang);
-    localStorage.setItem('lang', lang);
   }
   async onLogout() {
     await this.auth.logout();
