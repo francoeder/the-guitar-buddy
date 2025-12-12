@@ -35,5 +35,16 @@
   "dashboard": {
     "title": "Dashboard",
     "logout": "Logout"
+  },
+  "runner": {
+    "exitTraining": "Exit training",
+    "playAgain": "Play again",
+    "prep": {
+      "getReady": "Get ready",
+      "restTime": "Rest time",
+      "go": "Go!",
+      "nextExercise": "Next exercise:",
+      "bpm": "BPM:"
+    }
   }
 }

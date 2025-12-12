@@ -10,21 +10,22 @@ import { MatIconModule } from '@angular/material/icon';
 import { MetronomeService } from '../../services/metronome.service';
 import { PrepOverlayComponent } from './prep-overlay.component';
 import { UsageService } from '../../services/usage.service';
+import { TranslateModule } from '@ngx-translate/core';
 
 type MediaType = 'image' | 'iframe' | 'none';
 
 @Component({
   selector: 'app-training-runner',
   standalone: true,
-  imports: [CommonModule, SafeResourcePipe, MatButtonModule, MatIconModule, PrepOverlayComponent],
+  imports: [CommonModule, SafeResourcePipe, MatButtonModule, MatIconModule, PrepOverlayComponent, TranslateModule],
   template: `
     <div class="h-[100svh] overflow-hidden flex flex-col">
-      <app-prep-overlay *ngIf="isPrep()" [seconds]="prepRemaining()" [nextTitle]="prepNextTitle()" [bpm]="prepBpm()" [message]="prepMessage()"></app-prep-overlay>
+      <app-prep-overlay *ngIf="isPrep() && !isNextVideo()" [seconds]="prepRemaining()" [nextTitle]="prepNextTitle()" [bpm]="prepBpm()" [message]="prepMessage()"></app-prep-overlay>
       <div class="h-14 pr-3 pl-0 border-b bg-white shrink-0 relative flex items-center justify-center">
         <div class="absolute left-3">
-          <button mat-raised-button color="primary" (click)="back()">
+          <button mat-raised-button color="primary" (click)="exit()">
             <mat-icon>arrow_back</mat-icon>
-            Back
+            {{ 'runner.exitTraining' | translate }}
           </button>
         </div>
         <div class="text-center">
@@ -36,28 +37,46 @@ type MediaType = 'image' | 'iframe' | 'none';
 
       <div class="flex-1 min-h-0 flex items-center justify-center bg-gray-50 overflow-hidden relative">
         <ng-container [ngSwitch]="mediaType(current()?.resourceLink)">
-          <div *ngSwitchCase="'image'" class="flex-1 min-h-0 w-full h-full p-[25px] flex items-center justify-center overflow-hidden">
-            <img [src]="current()?.resourceLink" [alt]="current()?.title || 'Exercise image'" class="block max-w-full max-h-full object-contain m-auto" />
+          <div *ngSwitchCase="'image'" class="flex-1 min-h-0 w-full h-full flex items-center justify-center overflow-hidden">
+            <img [src]="current()?.resourceLink" [alt]="current()?.title || 'Exercise image'" class="block h-full w-auto max-h-full object-contain m-auto" />
           </div>
           <iframe *ngSwitchCase="'iframe'" [src]="resolveMediaSrc(current()?.resourceLink) | safeResource" [attr.id]="videoIframeId()" class="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
           <div *ngSwitchDefault class="text-gray-400">No media</div>
         </ng-container>
         <div *ngIf="isVideoCurrent() && replayOverlay()" class="absolute inset-0 bg-black/100 flex items-center justify-center z-10">
-          <button mat-raised-button color="primary" (click)="playAgain()">Play again</button>
+          <button mat-raised-button color="primary" (click)="playAgain()">{{ 'runner.playAgain' | translate }}</button>
+        </div>
+        <div class="runner-overlays-left absolute left-3 bottom-3 z-20">
+          <button *ngIf="!isFirst()" mat-mini-fab (click)="prev()" aria-label="Previous" class="prev-fab">
+            <mat-icon>skip_previous</mat-icon>
+          </button>
+        </div>
+        <div class="runner-overlays-right absolute right-3 bottom-3 flex flex-col items-end gap-3 z-20">
+          <button *ngIf="!isVideoCurrent()" mat-mini-fab color="primary" (click)="toggle()" aria-label="Play or Pause" class="play-fab">
+            <mat-icon>{{ isPlayingCombined() ? 'pause' : 'play_arrow' }}</mat-icon>
+          </button>
+          <button mat-mini-fab (click)="nextOrFinish()" aria-label="Next or Finish" class="relative overflow-visible next-fab">
+            <mat-icon>{{ isLast() ? 'check' : 'skip_next' }}</mat-icon>
+            <span *ngIf="nextHint() && (isVideoCurrent() ? replayOverlay() : (isLast() || !autoplay()))" class="pointer-events-none absolute -inset-1 hint-ring rounded-full ring-2 ring-sky-500 animate-ping"></span>
+            <span *ngIf="nextHint() && (isVideoCurrent() ? replayOverlay() : (isLast() || !autoplay()))" class="pointer-events-none absolute -inset-1 hint-ring rounded-full ring-2 ring-sky-400"></span>
+          </button>
+        </div>
+        <div *ngIf="!isVideoCurrent() && remaining() > 0" class="runner-timer-top-right absolute right-3 top-3 z-20 bg-white/80 text-black rounded px-3 py-1 text-lg">
+          {{ remainingMinutes() }}:{{ remainingSeconds() | number:'2.0-0' }}
         </div>
       </div>
 
-      <div class="p-3 bg-white border-t shrink-0">
+      <div class="p-3 bg-white border-t shrink-0 runner-controls-bottom">
         <div class="flex items-center justify-center space-x-6">
-          <button mat-raised-button (click)="prev()" [disabled]="isFirst()">
+          <button *ngIf="!isFirst()" mat-raised-button (click)="prev()" class="prev-btn">
             <mat-icon>skip_previous</mat-icon>
             Previous
           </button>
-          <button mat-raised-button color="primary" (click)="toggle()" [disabled]="isVideoCurrent()" class="play-btn">
-            <mat-icon>{{ metro.isPlaying() ? 'pause' : 'play_arrow' }}</mat-icon>
-            {{ metro.isPlaying() ? 'Pause' : 'Play' }}
+          <button *ngIf="!isVideoCurrent()" mat-raised-button color="primary" (click)="toggle()" class="play-btn">
+            <mat-icon>{{ isPlayingCombined() ? 'pause' : 'play_arrow' }}</mat-icon>
+            {{ isPlayingCombined() ? 'Pause' : 'Play' }}
           </button>
-          <button mat-raised-button class="relative overflow-visible" (click)="nextOrFinish()">
+          <button mat-raised-button class="relative overflow-visible next-btn" (click)="nextOrFinish()">
             <mat-icon>{{ isLast() ? 'check' : 'skip_next' }}</mat-icon>
             {{ isLast() ? 'Finish' : 'Next' }}
             <span *ngIf="nextHint() && (isVideoCurrent() ? replayOverlay() : (isLast() || !autoplay()))" class="pointer-events-none absolute -inset-1 hint-ring rounded-full ring-2 ring-sky-500 animate-ping"></span>
@@ -76,7 +95,22 @@ type MediaType = 'image' | 'iframe' | 'none';
     `.hint-ring { border-radius: 9999px; }`,
     `.play-btn { --mdc-filled-button-disabled-container-color: #b0bec5; --mdc-filled-button-disabled-label-text-color: #37474f; }`,
     `.mat-mdc-raised-button.play-btn.mat-mdc-button-disabled { background-color: #b0bec5 !important; opacity: 1 !important; }`,
-    `.mat-mdc-raised-button.play-btn.mat-mdc-button-disabled .mdc-button__label { color: #37474f !important; }`
+    `.mat-mdc-raised-button.play-btn.mat-mdc-button-disabled .mdc-button__label { color: #37474f !important; }`,
+    `.mat-mdc-mini-fab.prev-fab { background-color: #1A73A8 !important; color: #ffffff !important; }`,
+    `.mat-mdc-mini-fab.next-fab { background-color: #1A73A8 !important; color: #ffffff !important; }`,
+    `.mat-mdc-mini-fab.play-fab { background-color: #0E3A59 !important; color: #ffffff !important; }`,
+    `.mat-mdc-raised-button.prev-btn { background-color: #1A73A8 !important; color: #ffffff !important; }`,
+    `.mat-mdc-raised-button.next-btn { background-color: #1A73A8 !important; color: #ffffff !important; }`,
+    `.mat-mdc-raised-button.play-btn { background-color: #0E3A59 !important; color: #ffffff !important; }`,
+    `.mat-mdc-mini-fab.play-fab.mat-mdc-button-disabled { background-color: #b0bec5 !important; opacity: 1 !important; }`,
+    `.mat-mdc-mini-fab.play-fab.mat-mdc-button-disabled .mat-mdc-button-touch-target, .mat-mdc-mini-fab.play-fab.mat-mdc-button-disabled .mat-mdc-focus-indicator, .mat-mdc-mini-fab.play-fab.mat-mdc-button-disabled .mat-mdc-button-ripple { background-color: transparent !important; }`,
+    `.mat-mdc-mini-fab.play-fab.mat-mdc-button-disabled .mat-icon { color: #37474f !important; }`,
+    `.runner-overlays-left { display: none; position: absolute; }`,
+    `.runner-overlays-right { display: none; position: absolute; }`,
+    `.runner-timer-top-right { display: none; position: absolute; }`,
+    `.runner-controls-bottom { display: block; }`,
+    `@media (orientation: landscape) and (max-height: 500px) { .runner-overlays-left, .runner-overlays-right { display: flex; } .runner-timer-top-right { display: block; } .runner-controls-bottom { display: none; } }`,
+    `@media (min-width: 1024px) { .runner-overlays-left, .runner-overlays-right { display: flex; } .runner-timer-top-right { display: block; } .runner-controls-bottom { display: none; } }`
   ]
 })
 export class TrainingRunnerComponent implements OnInit, OnDestroy {
@@ -92,11 +126,13 @@ export class TrainingRunnerComponent implements OnInit, OnDestroy {
   remaining = signal(0);
   isPrep = signal(false);
   prepRemaining = signal(0);
+  prepBreakSeconds = signal(0);
   autoplay = signal(false);
   nextHint = signal(false);
   shouldAutoplay = signal(false);
   replayOverlay = signal(false);
   reloadToken = signal(0);
+  timerPaused = signal(false);
   private timerId?: any;
   private prepTimerId?: any;
   prepPhase = signal<'rest' | 'prep'>('prep');
@@ -359,7 +395,7 @@ export class TrainingRunnerComponent implements OnInit, OnDestroy {
     }
   }
 
-  back() {
+  exit() {
     this.metro.stop();
     this.router.navigate(['/']);
   }
@@ -405,17 +441,38 @@ export class TrainingRunnerComponent implements OnInit, OnDestroy {
   toggle() {
     if (this.isVideoCurrent()) return;
     const bpm = this.current()?.bpm ?? 0;
-    this.metro.toggle(bpm);
+    if (this.isPlayingCombined()) {
+      if (this.timerId) clearInterval(this.timerId);
+      this.timerPaused.set(true);
+      this.metro.stop();
+    } else {
+      if (this.remaining() > 0) {
+        this.resumeTimer();
+      }
+      if (bpm > 0) {
+        if (this.metro.isPlaying()) {
+          if (this.metro.currentBpm() !== bpm) {
+            this.metro.stop();
+            this.metro.start(bpm);
+          }
+        } else {
+          this.metro.start(bpm);
+        }
+      } else {
+        this.metro.stop();
+      }
+    }
     this.lockLandscape();
   }
 
-  private resetTimer() {
+  isPlayingCombined() {
+    return ((!this.isVideoCurrent()) && (!this.timerPaused()) && this.remaining() > 0) || this.metro.isPlaying();
+  }
+
+  private resumeTimer() {
     const ex = this.current();
     if (!ex) return;
-    this.replayOverlay.set(false);
-    const total = ex.durationMinutes * 60 + ex.durationSeconds;
-    this.remaining.set(total);
-    this.nextHint.set(false);
+    this.timerPaused.set(false);
     if (this.timerId) clearInterval(this.timerId);
     this.timerId = setInterval(() => {
       const r = this.remaining();
@@ -432,6 +489,14 @@ export class TrainingRunnerComponent implements OnInit, OnDestroy {
           const nextLink = nextEx?.resourceLink;
           const nextIsVideo = this.mediaType(nextLink) === 'iframe';
           const breakSecRaw = ex.breakSeconds ?? 0;
+          if (nextIsVideo) {
+            this.isPrep.set(false);
+            this.shouldAutoplay.set(true);
+            this.index.set(this.index() + 1);
+            this.resetTimer();
+            this.nextHint.set(false);
+            return;
+          }
           if (breakSecRaw <= 0) {
             this.isPrep.set(false);
             this.shouldAutoplay.set(nextIsVideo);
@@ -449,6 +514,115 @@ export class TrainingRunnerComponent implements OnInit, OnDestroy {
           this.prepPhase.set(initialPrepPhase ? 'prep' : 'rest');
           this.prepTargetIndex.set(targetIdx);
           this.prepRemaining.set(breakSec);
+          if (initialPrepPhase) {
+            this.index.set(targetIdx);
+            this.shouldAutoplay.set(false);
+          }
+          if (this.prepTimerId) clearInterval(this.prepTimerId);
+          this.metro.stop();
+          let metroStartedForPrep = false;
+          this.prepTimerId = setInterval(() => {
+            const r2 = this.prepRemaining();
+            if (!metroStartedForPrep && r2 === 5) {
+              const targetIdx = this.prepTargetIndex();
+              const nextEx2 = typeof targetIdx === 'number' ? this.training?.exercises[targetIdx] : this.nextExercise();
+              const nbpm = nextEx2?.bpm ?? 0;
+              if (nbpm > 0) {
+                if (this.metro.isPlaying()) {
+                  if (this.metro.currentBpm() !== nbpm) {
+                    this.metro.stop();
+                    this.metro.start(nbpm);
+                  }
+                } else {
+                  this.metro.start(nbpm);
+                }
+              } else {
+                this.metro.stop();
+              }
+              this.prepPhase.set('prep');
+              const nextLinkPrep = typeof targetIdx === 'number' ? this.training?.exercises[targetIdx]?.resourceLink : undefined;
+              const nextIsImagePrep = this.mediaType(nextLinkPrep) === 'image';
+              if (nextIsImagePrep && typeof targetIdx === 'number') {
+                this.index.set(targetIdx);
+                this.shouldAutoplay.set(false);
+              }
+              metroStartedForPrep = true;
+            }
+            if (r2 > 0) {
+              this.prepRemaining.set(r2 - 1);
+            } else {
+              clearInterval(this.prepTimerId);
+              this.isPrep.set(false);
+              const targetIdx2 = this.prepTargetIndex();
+              const nextLink2 = typeof targetIdx2 === 'number' ? this.training?.exercises[targetIdx2]?.resourceLink : this.nextExercise()?.resourceLink;
+              const nextIsVideo2 = this.mediaType(nextLink2) === 'iframe';
+              this.shouldAutoplay.set(nextIsVideo2);
+              if (typeof targetIdx2 === 'number') {
+                this.index.set(targetIdx2);
+              } else {
+                this.index.set(this.index() + 1);
+              }
+              this.resetTimer();
+            }
+          }, 1000);
+          this.nextHint.set(false);
+        } else {
+          this.nextHint.set(true);
+        }
+      }
+    }, 1000);
+  }
+
+  private resetTimer() {
+    const ex = this.current();
+    if (!ex) return;
+    this.replayOverlay.set(false);
+    const total = ex.durationMinutes * 60 + ex.durationSeconds;
+    this.remaining.set(total);
+    this.nextHint.set(false);
+    this.timerPaused.set(false);
+    if (this.timerId) clearInterval(this.timerId);
+    this.timerId = setInterval(() => {
+      const r = this.remaining();
+      if (r > 0) {
+        this.remaining.set(r - 1);
+      } else {
+        clearInterval(this.timerId);
+        this.metro.stop();
+        if (this.isVideoCurrent()) {
+          return;
+        }
+        if (this.autoplay() && this.training && this.index() + 1 < this.training.exercises.length) {
+          const nextEx = this.nextExercise();
+          const nextLink = nextEx?.resourceLink;
+          const nextIsVideo = this.mediaType(nextLink) === 'iframe';
+          const breakSecRaw = ex.breakSeconds ?? 0;
+          if (nextIsVideo) {
+            this.isPrep.set(false);
+            this.shouldAutoplay.set(true);
+            this.index.set(this.index() + 1);
+            this.resetTimer();
+            this.nextHint.set(false);
+            return;
+          }
+          if (breakSecRaw <= 0) {
+            this.isPrep.set(false);
+            this.shouldAutoplay.set(nextIsVideo);
+            this.index.set(this.index() + 1);
+            this.resetTimer();
+            this.nextHint.set(false);
+            return;
+          }
+          const breakSec = Math.max(breakSecRaw, 5);
+          const targetIdx = this.index() + 1;
+          const nextLinkPrepInit = this.training?.exercises[targetIdx]?.resourceLink;
+          const nextIsImagePrepInit = this.mediaType(nextLinkPrepInit) === 'image';
+          const initialPrepPhase = (breakSecRaw <= 5);
+          this.isPrep.set(true);
+          this.prepPhase.set(initialPrepPhase ? 'prep' : 'rest');
+          this.prepTargetIndex.set(targetIdx);
+          this.prepRemaining.set(breakSec);
+          this.prepBreakSeconds.set(breakSec);
           if (initialPrepPhase) {
             this.index.set(targetIdx);
             this.shouldAutoplay.set(false);
@@ -530,6 +704,12 @@ export class TrainingRunnerComponent implements OnInit, OnDestroy {
 
   isVideoCurrent() {
     return this.mediaType(this.current()?.resourceLink) === 'iframe';
+  }
+
+  isNextVideo() {
+    const idx = this.prepTargetIndex();
+    const link = typeof idx === 'number' ? this.training?.exercises[idx]?.resourceLink : this.nextExercise()?.resourceLink;
+    return this.mediaType(link) === 'iframe';
   }
 
   playAgain() {
@@ -632,6 +812,7 @@ export class TrainingRunnerComponent implements OnInit, OnDestroy {
     this.prepPhase.set('prep');
     this.prepTargetIndex.set(this.index());
     this.prepRemaining.set(seconds);
+    this.prepBreakSeconds.set(seconds);
     this.nextHint.set(false);
     if (this.timerId) clearInterval(this.timerId);
     if (this.prepTimerId) clearInterval(this.prepTimerId);
@@ -680,7 +861,10 @@ export class TrainingRunnerComponent implements OnInit, OnDestroy {
   }
 
   prepMessage() {
-    return this.prepPhase() === 'rest' ? 'Rest Time' : 'Get Ready';
+    const b = this.prepBreakSeconds();
+    const r = this.prepRemaining();
+    if (b <= 5) return 'runner.prep.getReady';
+    return r > 5 ? 'runner.prep.restTime' : 'runner.prep.getReady';
   }
 
   remainingMinutes() {

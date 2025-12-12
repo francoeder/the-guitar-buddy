@@ -1,20 +1,21 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-prep-overlay',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslateModule],
   template: `
     <div class="fixed inset-0 z-40 box-border bg-white/95 border-8 border-indigo-500 flex items-center justify-center">
       <div class="text-center">
         <div class="text-indigo-600 font-bold text-7xl md:text-8xl leading-none countdown-anim">
           <ng-container *ngIf="seconds > 0; else goText">{{ seconds }}</ng-container>
-          <ng-template #goText>Go!</ng-template>
+          <ng-template #goText>{{ 'runner.prep.go' | translate }}</ng-template>
         </div>
-        <div class="mt-4 text-gray-600 text-2xl tracking-wide">{{ message }}</div>
-        <div class="mt-2 text-gray-700 text-lg" *ngIf="nextTitle">Next exercise: <span class="font-medium">{{ nextTitle }}</span></div>
-        <div class="mt-1 text-gray-700 text-lg" *ngIf="bpm > 0">BPM: <span class="font-medium">{{ bpm }}</span></div>
+        <div class="mt-4 text-gray-600 text-2xl tracking-wide">{{ message | translate }}</div>
+        <div class="mt-2 text-gray-700 text-lg" *ngIf="nextTitle">{{ 'runner.prep.nextExercise' | translate }} <span class="font-medium">{{ nextTitle }}</span></div>
+        <div class="mt-1 text-gray-700 text-lg" *ngIf="bpm > 0">{{ 'runner.prep.bpm' | translate }} <span class="font-medium">{{ bpm }}</span></div>
       </div>
     </div>
   `,
@@ -27,5 +28,5 @@ export class PrepOverlayComponent {
   @Input() seconds = 5;
   @Input() nextTitle?: string;
   @Input() bpm = 0;
-  @Input() message = 'Get Ready';
+  @Input() message = 'runner.prep.getReady';
 }

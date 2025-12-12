@@ -35,5 +35,16 @@
   "dashboard": {
     "title": "Painel",
     "logout": "Sair"
+  },
+  "runner": {
+    "exitTraining": "Sair do treino",
+    "playAgain": "Reproduzir novamente",
+    "prep": {
+      "getReady": "Prepare-se",
+      "restTime": "Tempo de descanso",
+      "go": "Vai!",
+      "nextExercise": "Próximo exercício:",
+      "bpm": "BPM:"
+    }
   }
 }
