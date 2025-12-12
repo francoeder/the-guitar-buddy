@@ -1,0 +1,13 @@
+{
+  "hosting": {
+    "public": "dist/music-buddy",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      { "source": "**", "destination": "/index.html" }
+    ]
+  }
+}

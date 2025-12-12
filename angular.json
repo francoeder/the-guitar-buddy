@@ -8,7 +8,7 @@
     ]
   },
   "projects": {
-    "guitar-buddy": {
+    "music-buddy": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -21,7 +21,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
-            "outputPath": "dist/guitar-buddy",
+            "outputPath": "dist/music-buddy",
             "index": "src/index.html",
             "main": "src/main.ts",
             "polyfills": [
@@ -48,8 +48,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kb",
-                  "maximumError": "1mb"
+                  "maximumWarning": "1500kb",
+                  "maximumError": "2mb"
                 }
               ],
               "outputHashing": "all"
@@ -59,11 +59,11 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "buildTarget": "guitar-buddy:build"
+            "buildTarget": "music-buddy:build"
           },
           "configurations": {
             "production": {
-              "buildTarget": "guitar-buddy:build:production"
+              "buildTarget": "music-buddy:build:production"
             }
           }
         },
