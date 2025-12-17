@@ -13,6 +13,7 @@ export class MetronomeService {
   private schedulerId?: number;
   private beatIndex = 0;
   private measureBeats = 1;
+  private runId = 0;
 
   async unlock(): Promise<void> {
     if (!this.audioCtx) {
@@ -33,6 +34,7 @@ export class MetronomeService {
     }
     this.currentBpm.set(bpm);
     this.isPlaying.set(true);
+    this.runId++;
     this.beatIndex = 0;
     this.measureBeats = this.resolveBeatsPerMeasure(this.beatStyle());
     this.nextTickTime = (this.audioCtx as AudioContext).currentTime + 0.05;
@@ -78,7 +80,10 @@ export class MetronomeService {
     this.setBeatStyle(style);
     this.currentBpm.set(bpm);
     this.isPlaying.set(true);
+    this.runId++;
     this.beatIndex = 0;
+    this.beatTick.set(0);
+    this.beatInMeasure.set(1);
     const beats = this.measureBeats;
     const secondsPerBeat = 60 / bpm;
     const measureSeconds = beats * secondsPerBeat;
@@ -108,6 +113,7 @@ export class MetronomeService {
 
   private scheduler() {
     if (!this.audioCtx || !this.isPlaying()) return;
+    const currentRunId = this.runId;
     const secondsPerBeat = 60 / this.currentBpm();
     while (this.nextTickTime < this.audioCtx.currentTime + 0.1) {
       const style = this.beatStyle();
@@ -116,6 +122,7 @@ export class MetronomeService {
       this.scheduleClick(this.nextTickTime, accent);
       const delayMs = Math.max(0, Math.floor((this.nextTickTime - this.audioCtx.currentTime) * 1000));
       setTimeout(() => {
+        if (!this.isPlaying() || this.runId !== currentRunId) return;
         this.beatInMeasure.set(currentBeatNumber);
         this.beatTick.set(this.beatTick() + 1);
       }, delayMs);

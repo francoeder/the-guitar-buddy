@@ -157,8 +157,8 @@ export class PrepOverlayComponent implements OnChanges, OnInit, OnDestroy {
     // Calculamos o total de beats esperados na preparação
     const totalBeats = this.prepMeasures * this.beatsPerMeasure;
     
-    // Se o tick atual for igual ao total de beats, estamos no último tempo do último compasso
-    if (this.beatTick === totalBeats) {
+    // Se o tick atual for igual ou maior ao total de beats, estamos no último tempo do último compasso
+    if (this.beatTick >= totalBeats) {
       return GO_KEY;
     }
     
