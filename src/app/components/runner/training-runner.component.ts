@@ -7,6 +7,7 @@ import { Training, Exercise } from '../../models/training.model';
 import { SafeResourcePipe } from '../../pipes/safe-resource.pipe';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MetronomeService } from '../../services/metronome.service';
 import { PrepOverlayComponent } from './prep-overlay.component';
 import { UsageService } from '../../services/usage.service';
@@ -17,7 +18,7 @@ type MediaType = 'image' | 'iframe' | 'none';
 @Component({
   selector: 'app-training-runner',
   standalone: true,
-  imports: [CommonModule, SafeResourcePipe, MatButtonModule, MatIconModule, PrepOverlayComponent, TranslateModule],
+  imports: [CommonModule, SafeResourcePipe, MatButtonModule, MatIconModule, PrepOverlayComponent, TranslateModule, MatSnackBarModule],
   template: `
     <div class="h-[100svh] overflow-hidden flex flex-col">
       <app-prep-overlay *ngIf="isPrep() && !isNextVideo()" [seconds]="prepRemaining()" [nextTitle]="prepNextTitle()" [bpm]="prepBpm()" [phase]="prepPhase()" [beatStyle]="prepBeatStyle()" [prepMeasures]="prepMeasures()" [beatTick]="metro.beatTick()" [beatInMeasure]="metro.beatInMeasure()" [breakSeconds]="prepBreakSeconds()" [autoplay]="autoplay()"></app-prep-overlay>
@@ -119,6 +120,7 @@ export class TrainingRunnerComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private auth = inject(AuthService);
   private svc = inject(TrainingService);
+  private snack = inject(MatSnackBar);
   metro = inject(MetronomeService);
   private usage = inject(UsageService);
 
@@ -154,6 +156,8 @@ export class TrainingRunnerComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.route.paramMap.subscribe(params => {
       const id = params.get('id') as string;
+      const ownerId = params.get('ownerId');
+
       const applyTraining = (t?: Training | null) => {
         if (!t) {
           this.training = undefined;
@@ -175,7 +179,13 @@ export class TrainingRunnerComponent implements OnInit, OnDestroy {
         if (existing) {
           applyTraining(existing);
         } else {
-          this.svc.getByIdOnce(id).then(applyTraining);
+          this.svc.getByIdOnce(id, ownerId ?? undefined)
+            .then(applyTraining)
+            .catch(err => {
+              console.error('Error loading training', err);
+              this.snack.open('Error loading training. Please check your permissions or link.', 'OK', { duration: 5000 });
+              this.router.navigate(['/']);
+            });
         }
       });
     });

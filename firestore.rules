@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/trainings/{trainingId} {
+      // Permite leitura se for o dono (userId == auth.uid)
+      // OU se o email do convidado estiver no array sharedWith
+      allow read: if request.auth != null && (
+        request.auth.uid == userId ||
+        request.auth.token.email in resource.data.sharedWith
+      );
+
+      // Apenas o dono pode editar ou deletar
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    match /users/{userId}/recentRuns/{docId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

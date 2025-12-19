@@ -5,21 +5,28 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
 import { TrainingService } from '../../services/training.service';
+import { AuthService } from '../../core/services/auth.service';
 import { Training } from '../../models/training.model';
 import { ConfirmDialogComponent } from '../../components/dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-trainings-list',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, MatDialogModule, MatSlideToggleModule],
+  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, MatDialogModule, MatSlideToggleModule, MatTooltipModule],
   template: `
     <div class="p-6">
       @if (trainings().length > 0) {
         <div class="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           @for (t of trainings(); track t._id) {
-            <mat-card class="shadow hover:shadow-lg transition-shadow">
+            <mat-card class="shadow hover:shadow-lg transition-shadow relative">
+              @if (isShared(t)) {
+                <div class="absolute top-2 right-2 z-10 bg-white/90 rounded-full w-8 h-8 flex items-center justify-center shadow-md backdrop-blur-sm transition-transform hover:scale-105" matTooltip="Shared with you">
+                  <mat-icon class="text-[#1A73A8] !w-5 !h-5 text-[20px] leading-none flex items-center justify-center">people</mat-icon>
+                </div>
+              }
               @if (t.cover) {
                 <img mat-card-image [src]="t.cover" alt="Training cover" class="h-40 object-cover" />
               } @else {
@@ -43,14 +50,16 @@ import { ConfirmDialogComponent } from '../../components/dialog/confirm-dialog.c
                   <mat-slide-toggle [checked]="autoplay(t._id)" (change)="setAutoplay(t._id, $event.checked)">Autoplay</mat-slide-toggle>
                 </div>
                 <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-                  <button mat-stroked-button (click)="edit(t)">
-                    <mat-icon>edit</mat-icon>
-                    Edit
-                  </button>
-                  <button mat-stroked-button color="warn" (click)="remove(t)">
-                    <mat-icon>delete</mat-icon>
-                    Delete
-                  </button>
+                  @if (!isShared(t)) {
+                    <button mat-stroked-button (click)="edit(t)">
+                      <mat-icon>edit</mat-icon>
+                      Edit
+                    </button>
+                    <button mat-stroked-button color="warn" (click)="remove(t)">
+                      <mat-icon>delete</mat-icon>
+                      Delete
+                    </button>
+                  }
                 </div>
               </mat-card-actions>
             </mat-card>
@@ -74,10 +83,12 @@ import { ConfirmDialogComponent } from '../../components/dialog/confirm-dialog.c
 })
 export class TrainingsListComponent {
   private svc = inject(TrainingService);
+  private auth = inject(AuthService);
   private router = inject(Router);
   private dialog = inject(MatDialog);
 
   trainings = computed(() => this.svc.getAll()());
+  currentUser = computed(() => this.auth.user());
 
   autoplayById = signal<Record<string, boolean>>({});
 
@@ -89,6 +100,10 @@ export class TrainingsListComponent {
     const map = { ...this.autoplayById() } as Record<string, boolean>;
     map[id] = value;
     this.autoplayById.set(map);
+  }
+
+  isShared(t: Training) {
+    return t.ownerId && t.ownerId !== this.currentUser()?.uid;
   }
 
   play(t: Training) {

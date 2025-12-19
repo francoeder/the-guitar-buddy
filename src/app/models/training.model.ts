@@ -13,8 +13,10 @@ export interface Exercise {
 export interface Training {
   _id: string;
   title: string;
-  owner: string;
+  owner: string; // email
+  ownerId?: string; // uid
   active: boolean;
   cover?: string;
+  sharedWith?: string[];
   exercises: Exercise[];
 }

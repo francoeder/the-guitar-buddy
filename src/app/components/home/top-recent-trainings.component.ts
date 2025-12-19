@@ -4,23 +4,30 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
 import { TrainingService } from '../../services/training.service';
 import { UsageService } from '../../services/usage.service';
+import { AuthService } from '../../core/services/auth.service';
 import { Training } from '../../models/training.model';
 import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-top-recent-trainings',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, MatSlideToggleModule, TranslateModule],
+  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, MatSlideToggleModule, MatTooltipModule, TranslateModule],
   template: `
     <div class="p-6">
       <h2 class="text-xl font-semibold mb-4">{{ 'home.lastTrainings' | translate }}</h2>
       @if (trainings().length > 0) {
         <div class="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           @for (t of trainings(); track t._id) {
-            <mat-card class="shadow hover:shadow-lg transition-shadow">
+            <mat-card class="shadow hover:shadow-lg transition-shadow relative">
+              @if (isShared(t)) {
+                <div class="absolute top-2 right-2 z-10 bg-white/90 rounded-full w-8 h-8 flex items-center justify-center shadow-md backdrop-blur-sm transition-transform hover:scale-105" matTooltip="Shared with you">
+                  <mat-icon class="text-[#1A73A8] !w-5 !h-5 text-[20px] leading-none flex items-center justify-center">people</mat-icon>
+                </div>
+              }
               @if (t.cover) {
                 <img mat-card-image [src]="t.cover" alt="Training cover" class="h-40 object-cover" />
               } @else {
@@ -57,6 +64,7 @@ export class TopRecentTrainingsComponent {
   private router = inject(Router);
   private trainingsSvc = inject(TrainingService);
   private usageSvc = inject(UsageService);
+  private auth = inject(AuthService);
 
   ids = this.usageSvc.getRecentIds();
   trainings = computed(() => {
@@ -64,6 +72,7 @@ export class TopRecentTrainingsComponent {
     const ids = this.ids();
     return ids.map(id => all.find(t => t._id === id)).filter(Boolean) as Training[];
   });
+  currentUser = computed(() => this.auth.user());
 
   autoplayById = signal<Record<string, boolean>>({});
 
@@ -75,6 +84,10 @@ export class TopRecentTrainingsComponent {
     const map = { ...this.autoplayById() } as Record<string, boolean>;
     map[id] = value;
     this.autoplayById.set(map);
+  }
+
+  isShared(t: Training) {
+    return t.ownerId && t.ownerId !== this.currentUser()?.uid;
   }
 
   play(t: Training) {

@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -66,9 +66,11 @@ import { LanguageSwitcherComponent } from '../../components/language-switcher.co
 export class LoginComponent {
   private auth = inject(AuthService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   async onLogin() {
     await this.auth.loginWithGoogle();
-    await this.router.navigateByUrl('/home');
+    const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/home';
+    await this.router.navigateByUrl(returnUrl);
   }
 }

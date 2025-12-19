@@ -14,8 +14,10 @@ import { TrainingService } from '../../services/training.service';
 import { Training, Exercise } from '../../models/training.model';
 import { AuthService } from '../../core/services/auth.service';
 import { ExerciseDialogComponent } from '../../components/dialog/exercise-dialog.component';
+import { SharingDialogComponent } from '../../components/dialog/sharing-dialog.component';
 import { SafeResourcePipe } from '../../pipes/safe-resource.pipe';
 import { TranslateModule } from '@ngx-translate/core';
+import { MatMenuModule } from '@angular/material/menu';
 
 @Component({
   selector: 'app-training-editor',
@@ -41,7 +43,10 @@ import { TranslateModule } from '@ngx-translate/core';
           <mat-icon>arrow_back</mat-icon>
           {{ 'common.back' | translate }}
         </button>
-        <div class="space-x-2">
+        <div class="space-x-2 flex items-center">
+          <button mat-icon-button (click)="share()" *ngIf="canShare()">
+             <mat-icon>share</mat-icon>
+          </button>
           <button mat-raised-button (click)="cancel()">{{ 'common.cancel' | translate }}</button>
           <button mat-raised-button color="primary" (click)="save()">{{ 'common.save' | translate }}</button>
         </div>
@@ -221,6 +226,20 @@ export class TrainingEditorComponent {
 
   back() {
     this.router.navigate(['/']);
+  }
+
+  canShare() {
+    const data = this.form.getRawValue();
+    const isOwner = !data.owner || data.owner === (this.auth.user()?.email ?? '');
+    return !!data._id && !this.unsaved() && isOwner;
+  }
+
+  share() {
+     const data = this.form.getRawValue();
+     this.dialog.open(SharingDialogComponent, {
+       data: { ...data } as any,
+       width: '450px'
+     });
   }
 
   cancel() {
