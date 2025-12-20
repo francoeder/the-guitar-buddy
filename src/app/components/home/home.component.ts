@@ -34,7 +34,7 @@ import { TranslateModule } from '@ngx-translate/core';
         </mat-card-actions>
       </mat-card>
       <app-top-recent-trainings></app-top-recent-trainings>
-      <div class="mt-6 px-6 flex flex-wrap items-center gap-3 sm:gap-2 justify-center sm:justify-start">
+      <div class="mt-6 flex flex-wrap items-center gap-3 sm:gap-2 justify-center sm:justify-start">
         <button mat-raised-button color="primary" class="flex items-center gap-2" (click)="goToTrainings()">
           <mat-icon>library_music</mat-icon>
           {{ 'home.viewAllTrainings' | translate }}

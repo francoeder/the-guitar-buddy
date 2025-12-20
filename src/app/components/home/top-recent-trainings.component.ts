@@ -18,10 +18,10 @@ import { TrainingCardComponent } from '../training-card/training-card.component'
   standalone: true,
   imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, MatSlideToggleModule, MatTooltipModule, TranslateModule, TrainingCardComponent],
   template: `
-    <div class="p-6">
+    <div>
       <h2 class="text-xl font-semibold mb-4">{{ 'home.lastTrainings' | translate }}</h2>
       @if (trainings().length > 0) {
-        <div class="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        <div class="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           @for (t of trainings(); track t._id) {
             <app-training-card [training]="t" [showManageActions]="true"></app-training-card>
           }

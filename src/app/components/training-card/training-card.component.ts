@@ -24,7 +24,7 @@ import { AuthService } from '../../core/services/auth.service';
       }
       <div class="px-4 pt-3">
         <div class="flex items-center justify-between gap-2">
-          <div class="text-base font-semibold leading-tight truncate" [matTooltip]="training.title">{{ training.title }}</div>
+          <div class="flex-1 min-w-0 text-base font-semibold leading-tight truncate" [matTooltip]="training.title">{{ training.title }}</div>
           @if (isShared) {
             <div class="flex items-center -mr-2 shrink-0">
               <button mat-icon-button (click)="openSharedDetails()" matTooltip="Shared with you" class="flex items-center justify-center">
