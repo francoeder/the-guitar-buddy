@@ -1,20 +1,31 @@
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{userId}/trainings/{trainingId} {
-      // Permite leitura se for o dono (userId == auth.uid)
-      // OU se o email do convidado estiver no array sharedWith
-      allow read: if request.auth != null && (
-        request.auth.uid == userId ||
-        request.auth.token.email in resource.data.sharedWith
-      );
-
-      // Apenas o dono pode editar ou deletar
-      allow write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    match /users/{userId}/recentRuns/{docId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-  }
-}
+rules_version = '2'; 
+ 
+ service cloud.firestore { 
+   match /databases/{database}/documents { 
+     
+     // Regras para coleção root 'trainings' 
+     match /trainings/{trainingId} { 
+       // Qualquer um pode ler se for público. Autenticados podem ler tudo. 
+       allow read: if resource.data.isPublic == true || request.auth != null; 
+       // Permitir escrita para autenticados (no futuro, restringir para ownerId == request.auth.uid) 
+       allow write: if request.auth != null; 
+     } 
+     
+     // Regras para subcoleção 'trainings' em 'users' (Legado) 
+     match /users/{userId}/trainings/{trainingId} { 
+       allow read: if resource.data.isPublic == true || request.auth != null; 
+       // Apenas o próprio usuário pode escrever na sua coleção 
+       allow write: if request.auth != null && request.auth.uid == userId; 
+     } 
+ 
+     // Regras para recentRuns (Histórico) 
+     match /users/{userId}/recentRuns/{runId} { 
+       allow read, write: if request.auth != null && request.auth.uid == userId; 
+     } 
+ 
+     // Fallback para outras coleções 
+     match /{document=**} { 
+       allow read, write: if request.auth != null; 
+     } 
+   } 
+ }

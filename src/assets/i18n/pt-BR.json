@@ -21,12 +21,14 @@
     "viewAllTrainings": "Ver todos os treinos",
     "createNewTraining": "Criar novo treino",
     "lastTrainings": "Seus últimos treinos",
+    "lastPublicTrainings": "Últimos Treinos Públicos",
     "exercises": "Exercícios",
     "active": "Ativo",
     "inactive": "Inativo",
     "edit": "Editar",
     "play": "Iniciar",
     "noRecentRuns": "Sem execuções recentes.",
+    "noPublicTrainings": "Nenhum treino público disponível.",
     "installTitle": "Instalar o aplicativo",
     "installDescription": "Tenha o Music Buddy no seu dispositivo para uma experiência melhor.",
     "install": "Instalar",
@@ -53,6 +55,7 @@
     "edit": "Editar",
     "uploadImage": "Carregar imagem",
     "active": "Ativo",
+    "public": "Público",
     "exercises": "Exercícios",
     "addExercise": "Adicionar exercício",
     "exercise": "Exercício",
@@ -72,7 +75,8 @@
     "exercisesCount": "Exercícios: {{count}}",
     "newTraining": "Novo Treino",
     "unknown": "Desconhecido",
-    "close": "Fechar"
+    "close": "Fechar",
+    "done": "Concluído"
   },
   "trainings": {
     "noneCreated": "Nenhum treino criado ainda.",
@@ -102,27 +106,36 @@
     },
     "sharing": {
       "title": "Compartilhar Treino",
-      "instruction": "Compartilhar com contas do Google (@gmail.com)",
-      "emailLabel": "E-mail",
-      "invalidEmail": "E-mail inválido",
-      "gmailRequired": "Deve ser um endereço Gmail",
+      "modeSpecific": "Compartilhar com Pessoas Específicas",
+      "modePublic": "Tornar Treino Público",
+      "generalAccess": "Acesso geral",
+      "restricted": "Restrito",
+      "restrictedDescription": "Somente pessoas com acesso podem visualizar o treino",
+      "public": "Qualquer pessoa com o link",
+      "publicDescription": "Qualquer pessoa com o link pode visualizar",
+      "instruction": "Adicione pessoas por e-mail para dar acesso a este treino.",
+      "addPeoplePlaceholder": "Adicionar pessoas, grupos, espaços...",
+      "emailLabel": "Endereço de e-mail",
       "add": "Adicionar",
-      "whoHasAccess": "Quem tem acesso",
+      "whoHasAccess": "Pessoas com acesso",
       "notShared": "Ainda não compartilhado com ninguém.",
-      "copyLink": "Copiar Link de Acesso",
-      "accessGranted": "Acesso concedido",
-      "errorSharing": "Erro ao compartilhar treino",
-      "revokeConfirm": "Revogar acesso de {{email}}?",
-      "accessRevoked": "Acesso revogado",
-      "errorRevoking": "Erro ao revogar acesso",
-      "linkCopied": "Link copiado para a área de transferência"
+      "copyLink": "Copiar link",
+      "linkCopied": "Link copiado para a área de transferência!",
+      "accessGranted": "Acesso concedido com sucesso.",
+      "accessRevoked": "Acesso revogado com sucesso.",
+      "errorSharing": "Erro ao compartilhar treino.",
+      "errorRevoking": "Erro ao revogar acesso.",
+      "revokeConfirm": "Tem certeza que deseja revogar o acesso de {{email}}?",
+      "invalidEmail": "Por favor, insira um e-mail válido.",
+      "gmailRequired": "Por favor, use um endereço Gmail.",
+      "errorUpdating": "Erro ao atualizar status público.",
+      "done": "Concluído",
+      "you": "você",
+      "owner": "Proprietário",
+      "pendingChanges": "Alterações pendentes",
+      "save": "Salvar",
+      "undo": "Desfazer"
     }
-  },
-  "prepMeasures": {
-    "four": "Quatro",
-    "two": "Dois",
-    "one": "Um",
-    "none": "Nenhum"
   },
   "beat": {
     "none": "Nenhum",
@@ -150,6 +163,10 @@
     }
   },
   "pwa": {
+    "four": "Quatro",
+    "two": "Dois",
+    "one": "Um",
+    "none": "Nenhum",
     "installedMsg": "App instalado. Abra pelo ícone da Tela Inicial.",
     "ok": "OK"
   }

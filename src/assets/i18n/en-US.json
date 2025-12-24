@@ -21,12 +21,14 @@
     "viewAllTrainings": "View all trainings",
     "createNewTraining": "Create new training",
     "lastTrainings": "Your last trainings",
+    "lastPublicTrainings": "Latest Public Trainings",
     "exercises": "Exercises",
     "active": "Active",
     "inactive": "Inactive",
     "edit": "Edit",
     "play": "Play",
     "noRecentRuns": "No recent runs.",
+    "noPublicTrainings": "No public trainings available.",
     "installTitle": "Install the app",
     "installDescription": "Get Music Buddy on your device for a better experience.",
     "install": "Install",
@@ -53,6 +55,7 @@
     "edit": "Edit",
     "uploadImage": "Upload Image",
     "active": "Active",
+    "public": "Public",
     "exercises": "Exercises",
     "addExercise": "Add Exercise",
     "exercise": "Exercise",
@@ -74,7 +77,8 @@
     "unknown": "Unknown",
     "close": "Close",
     "inactive": "Inactive",
-    "unknownUser": "Unknown User"
+    "unknownUser": "Unknown User",
+    "done": "Done"
   },
   "trainings": {
     "noneCreated": "No trainings created yet.",
@@ -104,27 +108,36 @@
     },
     "sharing": {
       "title": "Share Training",
-      "instruction": "Share with Google accounts (@gmail.com)",
-      "emailLabel": "Email",
-      "invalidEmail": "Invalid email",
-      "gmailRequired": "Must be a Gmail address",
+      "modeSpecific": "Share with Specific People",
+      "modePublic": "Make Training Public",
+      "generalAccess": "General access",
+      "restricted": "Restricted",
+      "restrictedDescription": "Only people with access can view this training",
+      "public": "Anyone with the link",
+      "publicDescription": "Anyone with the link can view",
+      "instruction": "Add people by email to give them access to this training.",
+      "addPeoplePlaceholder": "Add people, groups, spaces, and calendar events",
+      "emailLabel": "Email address",
       "add": "Add",
-      "whoHasAccess": "Who has access",
+      "whoHasAccess": "People with access",
       "notShared": "Not shared with anyone yet.",
-      "copyLink": "Copy Access Link",
-      "accessGranted": "Access granted",
-      "errorSharing": "Error sharing training",
-      "revokeConfirm": "Revoke access for {{email}}?",
-      "accessRevoked": "Access revoked",
-      "errorRevoking": "Error revoking access",
-      "linkCopied": "Link copied to clipboard"
+      "copyLink": "Copy link",
+      "linkCopied": "Link copied to clipboard!",
+      "accessGranted": "Access granted successfully.",
+      "accessRevoked": "Access revoked successfully.",
+      "errorSharing": "Error sharing training.",
+      "errorRevoking": "Error revoking access.",
+      "revokeConfirm": "Are you sure you want to revoke access for {{email}}?",
+      "invalidEmail": "Please enter a valid email address.",
+      "gmailRequired": "Please use a Gmail address.",
+      "errorUpdating": "Error updating public status.",
+      "done": "Done",
+      "you": "you",
+      "owner": "Owner",
+      "pendingChanges": "Pending changes",
+      "save": "Save",
+      "undo": "Undo"
     }
-  },
-  "prepMeasures": {
-    "four": "Four",
-    "two": "Two",
-    "one": "One",
-    "none": "None"
   },
   "beat": {
     "none": "None",
@@ -152,6 +165,10 @@
     }
   },
   "pwa": {
+    "four": "Four",
+    "two": "Two",
+    "one": "One",
+    "none": "None",
     "installedMsg": "App installed. Open it from your Home screen.",
     "ok": "OK"
   }

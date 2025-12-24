@@ -51,7 +51,22 @@ export class TrainingsListComponent {
   private dialog = inject(MatDialog);
   private translate = inject(TranslateService);
 
-  trainings = computed(() => this.svc.getAll()());
+  trainings = computed(() => {
+    const mine = this.svc.getAll()();
+    const publics = this.svc.getPublicTrainings()();
+    
+    // Merge and deduplicate by ID
+    const all = [...mine, ...publics];
+    const unique = new Map();
+    all.forEach(t => unique.set(t._id, t));
+    
+    // Sort by createdAt desc
+    return Array.from(unique.values()).sort((a, b) => {
+      const ta = a.createdAt?.seconds ?? 0;
+      const tb = b.createdAt?.seconds ?? 0;
+      return tb - ta;
+    });
+  });
   currentUser = computed(() => this.auth.user());
   
   private sharedIdToOpen = signal<string | null>(null);
@@ -65,24 +80,35 @@ export class TrainingsListComponent {
 
     effect(() => {
       const id = this.sharedIdToOpen();
+      if (!id) return;
+      
       const list = this.trainings();
-      if (id && list.length > 0) {
-        const t = list.find(x => x._id === id);
-        if (t) {
-          // Use setTimeout to avoid ExpressionChangedAfterItHasBeenCheckedError if any
-          setTimeout(() => {
-            this.openSharedDetails(t);
-            this.sharedIdToOpen.set(null);
-            // Remove the query param from URL so it doesn't stay there
-            this.router.navigate([], {
-              relativeTo: this.route,
-              queryParams: { shared: null },
-              queryParamsHandling: 'merge',
-              replaceUrl: true
-            });
-          });
-        }
+      const t = list.find(x => x._id === id);
+      
+      if (t) {
+        setTimeout(() => {
+          this.openSharedDetails(t);
+          this.clearSharedParam();
+        });
+      } else {
+        // Try to fetch if it's a public training
+        this.svc.getPublicTrainingById(id).then(publicT => {
+          if (publicT) {
+             this.openSharedDetails(publicT);
+             this.clearSharedParam();
+          }
+        });
       }
+    });
+  }
+
+  clearSharedParam() {
+    this.sharedIdToOpen.set(null);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { shared: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
     });
   }
 

@@ -10,12 +10,13 @@ import { AuthService } from '../../core/services/auth.service';
 import { Training } from '../../models/training.model';
 import { ConfirmDialogComponent } from '../dialog/confirm-dialog.component';
 import { TopRecentTrainingsComponent } from './top-recent-trainings.component';
+import { TopPublicTrainingsComponent } from './top-public-trainings.component';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, MatDialogModule, TopRecentTrainingsComponent, TranslateModule],
+  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, MatDialogModule, TopRecentTrainingsComponent, TopPublicTrainingsComponent, TranslateModule],
   template: `
     <div class="p-6">
       <mat-card *ngIf="installAvailable() && isMobileView()" class="install-card">
@@ -34,6 +35,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
         </mat-card-actions>
       </mat-card>
       <app-top-recent-trainings></app-top-recent-trainings>
+      <app-top-public-trainings class="mt-8 block"></app-top-public-trainings>
       <div class="mt-6 flex flex-wrap items-center gap-3 sm:gap-2 justify-center sm:justify-start">
         <button mat-raised-button color="primary" class="flex items-center gap-2" (click)="goToTrainings()">
           <mat-icon>library_music</mat-icon>

@@ -17,6 +17,8 @@ export interface Training {
   ownerName?: string; // display name
   ownerId?: string; // uid
   active: boolean;
+  isPublic?: boolean;
+  createdAt?: any;
   cover?: string;
   sharedWith?: string[];
   exercises: Exercise[];

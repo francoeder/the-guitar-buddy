@@ -172,7 +172,13 @@ export class TrainingRunnerComponent implements OnInit, OnDestroy {
       };
       this.auth.authStateOnce().then(u => {
         if (!u) {
-          this.router.navigate(['/login']);
+          // Try public training for unauthenticated user
+          this.svc.getPublicTrainingById(id)
+            .then(t => {
+              if (t) applyTraining(t);
+              else this.router.navigate(['/login']);
+            })
+            .catch(() => this.router.navigate(['/login']));
           return;
         }
         const existing = this.svc.getById(id);
@@ -180,6 +186,10 @@ export class TrainingRunnerComponent implements OnInit, OnDestroy {
           applyTraining(existing);
         } else {
           this.svc.getByIdOnce(id, ownerId ?? undefined)
+            .then(t => {
+              if (t) return t;
+              return this.svc.getPublicTrainingById(id);
+            })
             .then(applyTraining)
             .catch(err => {
               console.error('Error loading training', err);

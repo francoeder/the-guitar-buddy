@@ -167,6 +167,7 @@ export class TrainingEditorComponent {
     title: ['', Validators.required],
     owner: [''],
     active: [true],
+    isPublic: [false],
     cover: [''],
     exercises: this.fb.array([] as ReturnType<typeof this.exerciseGroup>[])
   });
@@ -174,42 +175,48 @@ export class TrainingEditorComponent {
   constructor() {
     this.route.paramMap.subscribe(params => {
       const id = params.get('id') as string;
-      const existing = this.svc.getById(id);
-      const email = this.auth.user()?.email ?? '';
-      const applyTraining = (training: Training) => {
-        this.form.patchValue({
-          _id: training._id,
-          title: training.title,
-          owner: training.owner,
-          active: training.active,
-          cover: training.cover ?? ''
-        }, { emitEvent: false });
-        const arr = this.fb.array(training.exercises.map(e => this.exerciseGroup(e)));
-        this.form.setControl('exercises', arr);
-        arr.controls.forEach(g => this.tryAutoFillDuration(g as FormGroup));
-        this.form.get('owner')?.disable({ emitEvent: false });
-        if (!this.trackingSetup) {
-          this.form.valueChanges.subscribe(() => {
-            if (!this.bootstrapping) this.unsaved.set(true);
-          });
-          (this.form.get('exercises') as FormArray).valueChanges.subscribe(() => {
-            if (!this.bootstrapping) this.unsaved.set(true);
-          });
-          this.trackingSetup = true;
-        }
-        this.bootstrapping = false;
-      };
-      if (existing) {
-        applyTraining(existing);
-      } else {
-        this.svc.getByIdOnce(id).then(t => {
-          if (t) {
-            applyTraining(t);
-          } else {
-            applyTraining({ _id: id, title: 'New Training', owner: email, active: true, cover: '', exercises: [] });
+      
+      this.auth.authStateOnce().then(user => {
+        const existing = this.svc.getById(id);
+        const email = user?.email ?? '';
+        
+        const applyTraining = (training: Training) => {
+          this.form.patchValue({
+            _id: training._id,
+            title: training.title,
+            owner: training.owner,
+            active: training.active,
+            isPublic: training.isPublic || false,
+            cover: training.cover ?? ''
+          }, { emitEvent: false });
+          const arr = this.fb.array(training.exercises.map(e => this.exerciseGroup(e)));
+          this.form.setControl('exercises', arr);
+          arr.controls.forEach(g => this.tryAutoFillDuration(g as FormGroup));
+          this.form.get('owner')?.disable({ emitEvent: false });
+          if (!this.trackingSetup) {
+            this.form.valueChanges.subscribe(() => {
+              if (!this.bootstrapping) this.unsaved.set(true);
+            });
+            (this.form.get('exercises') as FormArray).valueChanges.subscribe(() => {
+              if (!this.bootstrapping) this.unsaved.set(true);
+            });
+            this.trackingSetup = true;
           }
-        });
-      }
+          this.bootstrapping = false;
+        };
+
+        if (existing) {
+          applyTraining(existing);
+        } else {
+          this.svc.getByIdOnce(id).then(t => {
+            if (t) {
+              applyTraining(t);
+            } else {
+              applyTraining({ _id: id, title: 'New Training', owner: email, active: true, cover: '', exercises: [] });
+            }
+          });
+        }
+      });
     });
   }
 
@@ -237,9 +244,20 @@ export class TrainingEditorComponent {
 
   share() {
      const data = this.form.getRawValue();
-     this.dialog.open(SharingDialogComponent, {
+     const ref = this.dialog.open(SharingDialogComponent, {
        data: { ...data } as any,
        width: '450px'
+     });
+
+     ref.afterClosed().subscribe(() => {
+        // Update local state in case sharing settings changed
+        const id = this.form.get('_id')?.value;
+        if (id) {
+           const updated = this.svc.getById(id);
+           if (updated && updated.isPublic !== undefined) {
+               this.form.patchValue({ isPublic: updated.isPublic }, { emitEvent: false });
+           }
+        }
      });
   }
 
