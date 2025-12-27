@@ -19,7 +19,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     <mat-dialog-content>
       <div class="flex flex-col gap-4">
         <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-100">
-          <p class="text-indigo-900 font-medium" [innerHTML]="'dialogs.sharedTraining.message' | translate:{owner: ownerDisplay}">
+          <p class="text-indigo-900 font-medium" [innerHTML]="messageKey | translate:{owner: ownerDisplay}">
           </p>
         </div>
 
@@ -75,9 +75,19 @@ export class SharedTrainingDialogComponent {
   private dialogRef = inject(MatDialogRef<SharedTrainingDialogComponent>);
   private translate = inject(TranslateService);
 
+  get messageKey(): string {
+    return this.data.isPublic 
+      ? 'dialogs.sharedTraining.messagePublic' 
+      : 'dialogs.sharedTraining.message';
+  }
+
   get ownerDisplay(): string {
     const name = this.data.ownerName;
     const email = this.data.owner;
+    
+    if (this.data.isPublic && name) {
+      return name;
+    }
     
     if (name && email) {
       return `${name} (${email})`;

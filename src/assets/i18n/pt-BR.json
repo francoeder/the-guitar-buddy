@@ -102,6 +102,7 @@
     "sharedTraining": {
       "title": "Treino Compartilhado",
       "message": "<strong>{{owner}}</strong> compartilhou este treino com você.",
+      "messagePublic": "Treino compartilhado por <strong>{{owner}}</strong>",
       "preview": "Prévia dos exercícios:"
     },
     "sharing": {

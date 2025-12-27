@@ -104,6 +104,7 @@
     "sharedTraining": {
       "title": "Shared Training",
       "message": "<strong>{{owner}}</strong> has shared this training with you.",
+      "messagePublic": "Training shared by <strong>{{owner}}</strong>",
       "preview": "Exercises Preview:"
     },
     "sharing": {
